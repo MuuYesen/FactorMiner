@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
 import {
-  Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest,
+  Experiments, ExperimentBuilder, ExperimentDetail, FactorLibrary, InspectorPage, Validation, Backtest,
   DataCenter, EnginePage, Reports, SettingsPage, Help, TasksPage, NotFound,
 } from './pages/PlatformPages';
 import { Projects, ProjectDetail, RunsPage, RunDetail } from './pages/WorkspacePages';
@@ -24,22 +24,17 @@ function App() {
             <Route path="projects/:id/factors" element={<FactorLibrary />} />
             <Route path="projects/:id/validation" element={<Validation />} />
             <Route path="experiments" element={<Experiments />} />
+            <Route path="experiments/new" element={<ExperimentBuilder />} />
             <Route path="experiments/:id" element={<ExperimentDetail />} />
             <Route path="runs" element={<RunsPage />} />
             <Route path="runs/:id" element={<RunDetail />} />
 
-            {/* Research */}
-            <Route path="idea" element={<Ideas />} />
-            <Route path="mining" element={<MiningFlow />} />
-            <Route path="launchpad" element={<MiningFlow />} />
-            <Route path="evolution" element={<InspectorPage />} />
-
             {/* Factors */}
             <Route path="library" element={<FactorLibrary />} />
-            <Route path="compare" element={<FactorLibrary />} />
+            <Route path="compare" element={<FactorLibrary kind="Compare" />} />
             <Route path="correlation" element={<Validation kind="Correlation" />} />
-            <Route path="lineage" element={<InspectorPage />} />
-            <Route path="inspector" element={<InspectorPage />} />
+            <Route path="lineage" element={<InspectorPage tab="Lineage" />} />
+            <Route path="factors/:id" element={<InspectorPage />} />
 
             {/* Validation */}
             <Route path="validation" element={<Validation />} />
@@ -50,9 +45,9 @@ function App() {
             <Route path="overfit" element={<Validation kind="Overfit" />} />
 
             {/* Portfolio */}
-            <Route path="combination" element={<Backtest />} />
-            <Route path="neutralization" element={<Backtest />} />
-            <Route path="backtest" element={<Backtest />} />
+            <Route path="portfolios" element={<Backtest kind="Portfolios" />} />
+            <Route path="backtests" element={<Backtest />} />
+            <Route path="risk" element={<Backtest kind="Risk" />} />
 
             {/* Data */}
             <Route path="data" element={<DataCenter kind="Datasets" />} />
@@ -64,12 +59,24 @@ function App() {
             <Route path="miners" element={<EnginePage kind="Miners" />} />
             <Route path="operators" element={<EnginePage kind="Operators" />} />
             <Route path="fitness" element={<EnginePage kind="Fitness" />} />
+            <Route path="models" element={<EnginePage kind="Models" />} />
+            <Route path="compute" element={<TasksPage />} />
             <Route path="tasks" element={<TasksPage />} />
 
             {/* Misc */}
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<Help />} />
+
+            {/* Legacy redirects — capabilities moved to their correct home */}
+            <Route path="idea" element={<Navigate to="/experiments/new" replace />} />
+            <Route path="mining" element={<Navigate to="/experiments/new" replace />} />
+            <Route path="launchpad" element={<Navigate to="/experiments/new" replace />} />
+            <Route path="evolution" element={<Navigate to="/library" replace />} />
+            <Route path="inspector" element={<Navigate to="/library" replace />} />
+            <Route path="combination" element={<Navigate to="/backtests" replace />} />
+            <Route path="neutralization" element={<Navigate to="/backtests" replace />} />
+            <Route path="backtest" element={<Navigate to="/backtests" replace />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

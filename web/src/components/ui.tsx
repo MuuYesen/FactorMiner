@@ -116,6 +116,23 @@ export function TableProgress({ value }: { value: number }) {
   );
 }
 
+/* ---------- Unified run progress monitor (miner-agnostic contract) ---------- */
+
+export function ProgressMonitor({ stageUnit, current, total, percentage, message }: {
+  stageUnit: string; current: number; total: number; percentage: number; message?: string;
+}) {
+  return (
+    <div className="progress-monitor">
+      <div className="pm-head">
+        <span className="pm-stage">{stageUnit} <b className="mono">{current}</b> <span className="pm-sep">/</span> <span className="mono">{total}</span></span>
+        <span className="pm-pct mono">{percentage}%</span>
+      </div>
+      <div className="progress"><span style={{ width: `${Math.max(0, Math.min(100, percentage))}%` }} /></div>
+      {message && <div className="pm-msg"><span className="pm-live" />{message}</div>}
+    </div>
+  );
+}
+
 /* ---------- Line chart (hover tooltip + optional benchmark series) ---------- */
 
 export function LineChart({ series, benchmark, benchmarkLabel = 'Benchmark', seriesLabel = 'Series', labels, oosFrom, height = 200, baseline = 0, valueFormat }: {

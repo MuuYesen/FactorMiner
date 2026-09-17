@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FlaskConical, GitBranch,
-  GitCompareArrows, Gauge, Layers3, LayoutGrid, LineChart, Network, Search, Settings2, Shuffle, Sparkles,
-  SlidersHorizontal, Target, TerminalSquare, TestTubes, Workflow, X, Cpu,
+  Activity, BarChart3, Boxes, Brain, Briefcase, ChevronDown, ChevronRight, CircleHelp, Cpu, Database,
+  FlaskConical, GitBranch, GitCompareArrows, Gauge, Layers3, LayoutGrid, LineChart, Network, Plus,
+  Search, Settings2, ShieldAlert, SlidersHorizontal, Target, TerminalSquare, TestTubes, Workflow, X,
 } from 'lucide-react';
 import { tasks } from '../data/researchData';
 
@@ -13,11 +13,6 @@ const sections = [
     { name: 'Projects', path: '/projects', icon: Boxes },
     { name: 'Experiments', path: '/experiments', icon: Workflow },
     { name: 'Runs', path: '/runs', icon: Activity },
-  ] },
-  { label: 'Research', items: [
-    { name: 'Research Idea', path: '/idea', icon: Sparkles },
-    { name: 'Mining', path: '/mining', icon: FlaskConical, count: 3 },
-    { name: 'Evolution', path: '/evolution', icon: GitBranch },
   ] },
   { label: 'Factors', items: [
     { name: 'Library', path: '/library', icon: Layers3 },
@@ -34,9 +29,9 @@ const sections = [
     { name: 'Overfit', path: '/overfit', icon: SlidersHorizontal },
   ] },
   { label: 'Portfolio', items: [
-    { name: 'Combination', path: '/combination', icon: Shuffle },
-    { name: 'Neutralization', path: '/neutralization', icon: SlidersHorizontal },
-    { name: 'Backtest', path: '/backtest', icon: LineChart },
+    { name: 'Portfolios', path: '/portfolios', icon: Briefcase },
+    { name: 'Backtests', path: '/backtests', icon: LineChart },
+    { name: 'Risk', path: '/risk', icon: ShieldAlert },
   ] },
   { label: 'Data', items: [
     { name: 'Datasets', path: '/data', icon: Database },
@@ -48,30 +43,32 @@ const sections = [
     { name: 'Miners', path: '/miners', icon: FlaskConical },
     { name: 'Operators', path: '/operators', icon: Settings2 },
     { name: 'Fitness', path: '/fitness', icon: Gauge },
-    { name: 'Compute / Tasks', path: '/tasks', icon: Cpu },
+    { name: 'Models', path: '/models', icon: Brain },
+    { name: 'Compute', path: '/compute', icon: Cpu },
+    { name: 'Tasks', path: '/tasks', icon: TerminalSquare },
   ] },
 ];
 
 const crumbLabels: Record<string, string> = {
-  projects: 'Projects', experiments: 'Experiments', runs: 'Runs', idea: 'Research Idea', mining: 'Mining',
-  evolution: 'Evolution', library: 'Factor Library', compare: 'Compare', correlation: 'Correlation',
-  lineage: 'Lineage', inspector: 'Factor Inspector', validation: 'Validation', stability: 'Stability',
-  regime: 'Regime', 'walk-forward': 'Walk Forward', overfit: 'Overfit', combination: 'Combination',
-  neutralization: 'Neutralization', backtest: 'Backtest', data: 'Datasets', universes: 'Universes',
-  features: 'Features', targets: 'Targets', miners: 'Miners', operators: 'Operators', fitness: 'Fitness',
-  tasks: 'Compute / Tasks', reports: 'Reports', settings: 'Settings', help: 'Help', launchpad: 'Mining',
+  projects: 'Projects', experiments: 'Experiments', new: 'New Experiment', runs: 'Runs',
+  library: 'Factor Library', compare: 'Compare', correlation: 'Correlation', lineage: 'Lineage',
+  factors: 'Factor', validation: 'Validation', ic: 'IC Analysis', stability: 'Stability', regime: 'Regime',
+  'walk-forward': 'Walk Forward', overfit: 'Overfit', portfolios: 'Portfolios', backtests: 'Backtests',
+  risk: 'Risk', data: 'Datasets', universes: 'Universes', features: 'Features', targets: 'Targets',
+  miners: 'Miners', operators: 'Operators', fitness: 'Fitness', models: 'Models', compute: 'Compute',
+  tasks: 'Tasks', reports: 'Reports', settings: 'Settings', help: 'Help',
 };
 
 const paletteItems = [
+  { group: 'Create', label: 'New Experiment', path: '/experiments/new', icon: Plus },
   { group: 'Go to', label: 'Workspace Overview', path: '/', icon: LayoutGrid },
   { group: 'Go to', label: 'Projects', path: '/projects', icon: Boxes },
   { group: 'Go to', label: 'Experiments', path: '/experiments', icon: Workflow },
   { group: 'Go to', label: 'Runs', path: '/runs', icon: Activity },
   { group: 'Go to', label: 'Factor Library', path: '/library', icon: Layers3 },
   { group: 'Go to', label: 'Validation Center', path: '/validation', icon: TestTubes },
-  { group: 'Create', label: 'New Research Idea', path: '/idea', icon: Sparkles },
-  { group: 'Create', label: 'New Experiment (Mining)', path: '/mining', icon: FlaskConical },
-  { group: 'Create', label: 'Run Backtest', path: '/backtest', icon: LineChart },
+  { group: 'Go to', label: 'Backtests', path: '/backtests', icon: LineChart },
+  { group: 'Go to', label: 'Engine · Miners', path: '/miners', icon: FlaskConical },
 ];
 
 export function MainLayout() {
@@ -82,9 +79,6 @@ export function MainLayout() {
   const [engineOpen, setEngineOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
-  const [density, setDensity] = useState(() => localStorage.getItem('fm-density') || 'comfortable');
-
-  useEffect(() => { localStorage.setItem('fm-density', density); document.documentElement.dataset.density = density; }, [density]);
 
   const results = useMemo(() => paletteItems.filter((i) => i.label.toLowerCase().includes(query.toLowerCase())), [query]);
 
@@ -164,6 +158,9 @@ export function MainLayout() {
 
       <div className="app-body">
         <aside className="app-nav">
+          <div className="nav-cta">
+            <Link to="/experiments/new" className="btn btn-primary btn-block"><Plus size={15} /> New Experiment</Link>
+          </div>
           <div className="nav-scroll">
             {sections.map((section) => (
               <div className="nav-group" key={section.label}>
@@ -173,7 +170,6 @@ export function MainLayout() {
                   return (
                     <Link key={item.path + item.name} to={item.path} className={`nav-item ${isActive(item.path) ? 'active' : ''}`}>
                       <Icon size={16} />{item.name}
-                      {'count' in item && item.count ? <span className="nav-count">{item.count}</span> : null}
                     </Link>
                   );
                 })}
@@ -181,6 +177,7 @@ export function MainLayout() {
             ))}
           </div>
           <div className="nav-foot">
+            <Link to="/settings" className={`nav-item ${isActive('/settings') ? 'active' : ''}`}><Settings2 size={16} />Settings</Link>
             <Link to="/help" className="nav-item"><CircleHelp size={16} />Help & docs</Link>
             <div className="nav-user">
               <span className="avatar">MR</span>
@@ -209,6 +206,12 @@ export function MainLayout() {
               <button className="icon-btn" onClick={() => setTasksOpen(false)} aria-label="Close"><X size={17} /></button>
             </div>
             <div className="drawer-body">
+              <div className="task-resources">
+                <div><span>CPU</span><b>62%</b></div>
+                <div><span>GPU</span><b>4 / 4</b></div>
+                <div><span>Workers</span><b>8</b></div>
+                <div><span>Queue</span><b>1</b></div>
+              </div>
               {tasks.map((t) => (
                 <div className="task-card" key={t.id}>
                   <div className="task-card-head"><b>{t.name}</b><span className="mono">{t.progress}%</span></div>

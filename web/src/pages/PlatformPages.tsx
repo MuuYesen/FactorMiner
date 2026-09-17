@@ -1,112 +1,48 @@
-import { useMemo, useState } from 'react';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, AlertTriangle, Check, Clipboard, Download, FlaskConical, GitCompareArrows, Play, Plus, RefreshCw, Search, Sparkles, Target, TrendingDown, TrendingUp,
+  AlertTriangle, ArrowRight, Check, ChevronRight, Clipboard, GitBranch, Play, Plus,
+  Search, Sparkles,
 } from 'lucide-react';
 import {
-  candidates, datasets, experiments, factorLineage, factors, featureGroups, icSeries, miners, operators, projects,
-  reports, researchContext, researchIdeas, runs, targets, tasks, universes, validationChecks, validationResults,
+  datasets, experiments, factorLineage, factors, featureGroups, icSeries,
+  operators, projects, reports, runs, targets, universes, validationChecks, validationResults, validationRuns,
+  type Factor,
 } from '../data/researchData';
-import { PageHead, Panel, PanelHead, Pill, Metrics, LineChart, BarChart, DivergingBars, Waterfall, Gauge, ConclusionCard, Empty } from '../components/ui';
+import {
+  minerRegistry, getMiner, formatMetric, defaultConfig, paradigmLabels, sharedMetrics,
+} from '../registry/miners';
+import { SchemaForm, DefinitionRenderer, definitionTypeLabels } from '../registry/renderers';
+import {
+  PageHead, Panel, PanelHead, Pill, Metrics, LineChart, DivergingBars, Waterfall, Gauge,
+  ConclusionCard, Empty,
+} from '../components/ui';
+import { ProjectScope } from './WorkspacePages';
 
-/* ============================ Research Idea ============================ */
+const minerName = (id: string) => getMiner(id)?.name ?? id;
+const paradigmOf = (id: string) => getMiner(id)?.paradigm ?? '';
 
-export function Ideas() {
-  const [items, setItems] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fm-ideas') || 'null') || researchIdeas; } catch { return researchIdeas; }
-  });
-  const [selected, setSelected] = useState<string>(items[0]?.id);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({ title: '', hypothesis: '', tag: '均值回归' });
-
-  const active = items.find((i: any) => i.id === selected) || items[0];
-  const save = () => {
-    if (!draft.title.trim() || !draft.hypothesis.trim()) return;
-    const next = [{ id: `idea-${Date.now()}`, title: draft.title, hypothesis: draft.hypothesis, status: '草稿', updated: '刚刚', experiments: [], tags: [draft.tag] }, ...items];
-    setItems(next); localStorage.setItem('fm-ideas', JSON.stringify(next)); setEditing(false); setSelected(next[0].id); setDraft({ title: '', hypothesis: '', tag: '均值回归' });
-  };
-
-  return (
-    <div className="page">
-      <PageHead eyebrow="Research" title="Research Ideas" description="把研究问题、假设与验证标准记录为可追踪的研究起点，并据此创建 Project 或 Experiment。" actions={<button className="btn btn-primary" onClick={() => setEditing(true)}><Plus size={15} /> New idea</button>} />
-      <div className="split-l">
-        <Panel>
-          <PanelHead eyebrow="Ideas" title={`${items.length} hypotheses`} />
-          <div className="option-list" style={{ padding: 12 }}>
-            {items.map((idea: any) => (
-              <button key={idea.id} className={`option ${active?.id === idea.id ? 'active' : ''}`} onClick={() => { setSelected(idea.id); setEditing(false); }}>
-                <span style={{ flex: 1 }}>
-                  <b>{idea.title}</b>
-                  <small>{idea.hypothesis}</small>
-                  <span className="tag-row" style={{ marginTop: 8 }}>
-                    <span className="pill pill-neutral no-dot">{idea.status}</span>
-                    {idea.experiments.length > 0 && <span className="tag">{idea.experiments.length} experiments</span>}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </Panel>
-
-        {editing ? (
-          <Panel>
-            <PanelHead eyebrow="New idea" title="Record a research hypothesis" />
-            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <label className="field"><span>研究问题 / 标题</span><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="例如：极端资金费率后的短周期反转" /></label>
-              <label className="field"><span>假设 (Hypothesis)</span><textarea rows={4} value={draft.hypothesis} onChange={(e) => setDraft({ ...draft, hypothesis: e.target.value })} placeholder="描述可验证的市场假设与预期方向" /></label>
-              <label className="field"><span>研究主题标签</span><select value={draft.tag} onChange={(e) => setDraft({ ...draft, tag: e.target.value })}><option>均值回归</option><option>资金费率</option><option>横截面</option><option>波动率</option></select></label>
-              <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary" onClick={save}><Check size={15} /> Save idea</button><button className="btn" onClick={() => setEditing(false)}>Cancel</button></div>
-            </div>
-          </Panel>
-        ) : active ? (
-          <div>
-            <Panel>
-              <PanelHead eyebrow="Hypothesis" title={active.title} aside={<Pill>{active.status}</Pill>} />
-              <div className="panel-body">
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>{active.hypothesis}</p>
-                <div className="tag-row" style={{ marginTop: 14 }}>{active.tags?.map((t: string) => <span key={t} className="tag">{t}</span>)}</div>
-              </div>
-              <div className="panel-note">Updated {active.updated}</div>
-            </Panel>
-            <Panel>
-              <PanelHead eyebrow="Turn into research" title="Create experiment from idea" />
-              <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label className="field"><span>Target project</span><select defaultValue={projects[0].id}>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-                <div style={{ display: 'flex', gap: 8 }}><Link className="btn btn-primary" to="/mining"><FlaskConical size={15} /> Configure experiment</Link><button className="btn">Attach existing experiment</button></div>
-              </div>
-            </Panel>
-            {active.experiments.length > 0 && (
-              <Panel>
-                <PanelHead eyebrow="Linked" title="Experiments from this idea" />
-                <div className="table-wrap"><table className="data"><tbody>{active.experiments.map((eid: string) => { const e = experiments.find((x) => x.id === eid); return <tr key={eid}><td><Link className="text-link" to={`/experiments/${eid}`}>{e?.name || eid}</Link></td><td><Pill>{e?.status}</Pill></td></tr>; })}</tbody></table></div>
-              </Panel>
-            )}
-          </div>
-        ) : <Empty title="No idea selected" />}
-      </div>
-    </div>
-  );
-}
-
-/* ============================ Experiments ============================ */
+/* ============================ Experiments (unified research entry) ============================ */
 
 export function Experiments() {
   const { id } = useParams();
   const [query, setQuery] = useState('');
   const scoped = id ? experiments.filter((e) => e.projectId === id) : experiments;
-  const list = scoped.filter((e) => `${e.name}${e.miner}${e.status}`.toLowerCase().includes(query.toLowerCase()));
+  const list = scoped.filter((e) => `${e.name}${minerName(e.minerId)}${e.status}`.toLowerCase().includes(query.toLowerCase()));
   const project = id ? projects.find((p) => p.id === id) : undefined;
+  const newHref = project ? `/experiments/new?project=${project.id}` : '/experiments/new';
 
   const table = (
     <Panel>
       <div className="table-wrap">
         <table className="data">
-          <thead><tr><th>Experiment</th><th>Miner</th><th>Status</th><th>Latest run</th><th className="num-cell">Runs</th><th className="num-cell">Candidates</th><th>Updated</th></tr></thead>
+          <thead><tr><th>Experiment</th><th>Miner</th><th>Paradigm</th><th>Status</th><th>Latest run</th><th className="num-cell">Runs</th><th className="num-cell">Candidates</th><th>Updated</th></tr></thead>
           <tbody>
             {list.map((e) => (
               <tr key={e.id}>
-                <td><Link className="cell-main text-link" to={`/experiments/${e.id}`}>{e.name}</Link><span className="cell-sub">{e.researchQuestion}</span></td>
-                <td><span className="tag">{e.miner}</span></td>
+                <td><Link className="cell-main text-link" to={`/experiments/${e.id}`}>{e.name}</Link><span className="cell-sub">{e.researchQuestion || e.objective}</span></td>
+                <td><span className="tag">{minerName(e.minerId)}</span></td>
+                <td><span className="paradigm-tag">{paradigmOf(e.minerId)}</span></td>
                 <td><Pill>{e.status}</Pill></td>
                 <td><Pill>{e.latestRunStatus}</Pill></td>
                 <td className="mono num-cell">{e.totalRuns}</td>
@@ -114,6 +50,7 @@ export function Experiments() {
                 <td style={{ fontSize: 12, color: 'var(--text-4)' }}>{e.updated}</td>
               </tr>
             ))}
+            {list.length === 0 && <tr><td colSpan={8}><Empty inline title="No experiments" text="创建一个 Experiment 开始研究。" /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -125,8 +62,8 @@ export function Experiments() {
       <div className="page">
         <div className="scope-head">
           <div className="eyebrow">Project · {project.id}</div>
-          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内���研究设计。</p></div><Link className="btn btn-primary" to="/mining"><Plus size={15} /> New experiment</Link></div>
-          <div className="tabs">{[['Overview', `/projects/${project.id}`], ['Experiments', `/projects/${project.id}/experiments`], ['Runs', `/projects/${project.id}/runs`], ['Factors', `/projects/${project.id}/factors`], ['Validation', `/projects/${project.id}/validation`]].map(([l, t]) => <Link key={l} to={t} className={l === 'Experiments' ? 'active' : ''}>{l}</Link>)}</div>
+          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内的研究设计。</p></div><Link className="btn btn-primary" to={newHref}><Plus size={15} /> New Experiment</Link></div>
+          <ProjectScope id={project.id} active="Experiments" />
         </div>
         <div className="toolbar"><div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索实验" /></div></div>
         {table}
@@ -136,119 +73,125 @@ export function Experiments() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Workspace" title="Experiments" description="一个 Experiment 描述一次研究设计（我们在测试什么），并可产生多个可复现的 Run。" actions={<Link className="btn btn-primary" to="/mining"><Plus size={15} /> New experiment</Link>} />
-      <div className="toolbar"><div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索实验、Miner 或状态" /><span /></div><button className="btn">Status: All</button><button className="btn">Miner: All</button></div>
+      <PageHead eyebrow="Workspace" title="Experiments" description="一个 Experiment 描述一次研究设计（我们在测试什么、如何测试），并可产生多个可复现的 Run。所有 Miner 共用同一入口。" actions={<Link className="btn btn-primary" to={newHref}><Plus size={15} /> New Experiment</Link>} />
+      <div className="toolbar"><div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索实验、Miner 或状态" /></div><button className="btn">Status: All</button><button className="btn">Miner: All</button></div>
       {table}
     </div>
   );
 }
 
-export function ExperimentDetail() {
-  const { id = 'exp-184' } = useParams();
-  const experiment = experiments.find((e) => e.id === id) || experiments[0];
-  const project = projects.find((p) => p.id === experiment.projectId);
-  const expRuns = runs.filter((r) => r.experimentId === experiment.id);
-  const [tab, setTab] = useState('Overview');
-  const tabs = ['Overview', 'Configuration', 'Runs', 'Candidates', 'Factors', 'Artifacts'];
+/* ============================ Schema-driven Experiment Builder ============================ */
 
-  return (
-    <div className="page">
-      <div className="scope-head">
-        <div className="eyebrow">Experiment · {experiment.id}</div>
-        <div className="scope-top">
-          <div><h1>{experiment.name}</h1><p className="scope-desc">{experiment.researchQuestion}</p></div>
-          <div className="head-actions"><button className="btn"><Clipboard size={14} /> Duplicate config</button><button className="btn btn-primary"><Play size={15} /> New run</button></div>
-        </div>
-        <dl className="scope-meta">
-          <div><dt>Status</dt><dd><Pill>{experiment.status}</Pill></dd></div>
-          <div><dt>Project</dt><dd><Link className="text-link" to={`/projects/${experiment.projectId}`}>{project?.name}</Link></dd></div>
-          <div><dt>Miner</dt><dd>{experiment.miner}</dd></div>
-          <div><dt>Total runs</dt><dd className="mono">{experiment.totalRuns}</dd></div>
-          <div><dt>Active runs</dt><dd className="mono">{experiment.activeRuns}</dd></div>
-          <div><dt>Search space</dt><dd style={{ fontSize: 12 }}>{experiment.searchSpace}</dd></div>
-        </dl>
-        <div className="tabs">{tabs.map((t) => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}</div>
-      </div>
+export function ExperimentBuilder() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const fromFactorId = params.get('from');
+  const fromFactor = fromFactorId ? factors.find((f) => f.id === fromFactorId) : undefined;
+  const initialProject = projects.find((p) => p.id === params.get('project')) || projects[0];
 
-      {tab === 'Overview' && (
-        <div className="split">
-          <Panel>
-            <PanelHead eyebrow="Runs" title="Execution history" />
-            <div className="table-wrap"><table className="data"><thead><tr><th>Run</th><th>Status</th><th>Progress</th><th className="num-cell">Factors</th></tr></thead><tbody>{expRuns.map((r) => <tr key={r.id}><td><Link className="cell-main text-link" to={`/runs/${r.id}`}>{r.id}</Link><span className="cell-sub mono">seed {r.seed}</span></td><td><Pill>{r.status}</Pill></td><td><div className="table-progress"><div className="progress thin"><span style={{ width: `${r.progress}%` }} /></div><small>{r.progress}%</small></div></td><td className="mono num-cell">{r.factors}</td></tr>)}</tbody></table></div>
-          </Panel>
-          <Panel>
-            <PanelHead eyebrow="Design" title="Research question" />
-            <div className="panel-body">
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{experiment.researchQuestion}</p>
-              <dl className="kv" style={{ marginTop: 16 }}>
-                <dt>Universe</dt><dd className="mono">{project?.defaultUniverse}</dd>
-                <dt>Target</dt><dd>{project?.defaultTarget}</dd>
-                <dt>Validation</dt><dd>{project?.validationPolicy}</dd>
-              </dl>
-            </div>
-          </Panel>
-        </div>
-      )}
-
-      {tab === 'Configuration' && (
-        <Panel><div className="panel-body"><pre className="code-block">{JSON.stringify({ miner: experiment.miner, universe: project?.defaultUniverse, timeframe: project?.defaultTimeframe, target: project?.defaultTarget, features: featureGroups, operators, fitness: 'RankIC - λ·turnover', split: { train: '2022.01—2024.12', validation: '2025.01—2025.06', oos: '2025.07—2026.08' }, validationPolicy: project?.validationPolicy, seed: 42 }, null, 2)}</pre></div></Panel>
-      )}
-      {tab === 'Runs' && <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Run</th><th>Status</th><th>Started</th><th className="num-cell">Candidates</th><th className="num-cell">Factors</th></tr></thead><tbody>{expRuns.map((r) => <tr key={r.id}><td><Link className="text-link mono" to={`/runs/${r.id}`}>{r.id}</Link></td><td><Pill>{r.status}</Pill></td><td>{r.started}</td><td className="mono num-cell">{r.candidates.toLocaleString()}</td><td className="mono num-cell">{r.factors}</td></tr>)}</tbody></table></div></Panel>}
-      {tab === 'Candidates' && <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Candidate</th><th>Expression</th><th className="num-cell">IC</th><th>Outcome</th></tr></thead><tbody>{candidates.map((c) => <tr key={c.id}><td className="mono" style={{ fontSize: 12 }}>{c.id}</td><td className="mono" style={{ fontSize: 12 }}>{c.expression}</td><td className="mono num-cell">{c.ic.toFixed(3)}</td><td>{c.kept ? <Link className="text-link" to={`/inspector?factor=${c.savedFactorId}`}>Saved</Link> : <span className="pill pill-neutral no-dot">Discarded</span>}</td></tr>)}</tbody></table></div></Panel>}
-      {tab === 'Factors' && <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Factor</th><th>Lifecycle</th><th className="num-cell">IC</th><th className="num-cell">OOS IC</th></tr></thead><tbody>{factors.filter((f) => f.experimentId === experiment.id).map((f) => <tr key={f.id}><td><Link className="text-link" to={`/inspector?factor=${f.id}`}>{f.name}</Link></td><td><Pill>{f.lifecycle}</Pill></td><td className="mono num-cell">{f.ic.toFixed(3)}</td><td className="mono num-cell">{f.oosIc.toFixed(3)}</td></tr>)}</tbody></table></div></Panel>}
-      {tab === 'Artifacts' && <Panel><div className="panel-body"><Empty inline title={`${experiment.miner} artifacts`} text={`该实验使用 ${experiment.miner} miner。Artifact（表达式树 / 生成代码 / 动作序列 / 模型）在每个 Run 完成后生成，可在具体 Run 或 Factor Inspector 中查看。`} action={expRuns[0] ? <Link className="btn" to={`/runs/${expRuns[0].id}`}>Open latest run</Link> : undefined} /></div></Panel>}
-    </div>
-  );
-}
-
-/* ============================ Mining / Experiment Builder ============================ */
-
-export function MiningFlow() {
-  const [miner, setMiner] = useState('GP');
+  const [projectId, setProjectId] = useState(initialProject.id);
+  const project = projects.find((p) => p.id === projectId) || projects[0];
+  const [name, setName] = useState(fromFactor ? `Evolve · ${fromFactor.name}` : '');
+  const [meta, setMeta] = useState({ objective: '', question: '', hypothesis: '', notes: '' });
+  const [context, setContext] = useState({ dataset: project.defaultDataset, universe: project.defaultUniverse, timeframe: project.defaultTimeframe, target: project.defaultTarget, cost: project.transactionCost, policy: project.validationPolicy });
   const [selectedFeatures, setSelectedFeatures] = useState(featureGroups.slice(0, 4));
-  const [selectedOps, setSelectedOps] = useState(operators.slice(0, 3));
+  const [minerId, setMinerId] = useState(fromFactor?.originMinerId || 'quanta_alpha');
+  const [config, setConfig] = useState<Record<string, unknown>>(() => defaultConfig(minerId));
 
-  const minerMeta = miners.find((m) => m.code === miner)!;
+  const miner = getMiner(minerId)!;
+  const availableMiners = minerRegistry.filter((m) => m.enabled);
+
+  const pickMiner = (id: string) => { setMinerId(id); setConfig(defaultConfig(id)); };
+  const setContextField = (k: string, v: string) => setContext((c) => ({ ...c, [k]: v }));
 
   return (
     <div className="page page-wide">
-      <PageHead eyebrow="Research · Experiment Builder" title="Mining Experiment" description="配置一次可复现的因子搜索。保存为 Experiment，或直接保存并执行一个 Run。" actions={<><button className="btn"><Clipboard size={15} /> Save experiment</button><button className="btn btn-primary"><Play size={15} /> Save & run</button></>} />
+      <PageHead
+        eyebrow={fromFactor ? 'Evolve · Create Experiment from Factor' : 'Workspace · New Experiment'}
+        title={fromFactor ? `Evolve ${fromFactor.name}` : 'New Experiment'}
+        description="配置一次可复现的研究。公共部分由 FactorMiner 定义，Miner 特有配置由所选 Miner 的 Schema 动态生成。"
+        actions={<>
+          <button className="btn" onClick={() => navigate('/experiments')}><Clipboard size={15} /> Save Experiment</button>
+          <button className="btn btn-primary" onClick={() => navigate('/runs/RUN-184-03')}><Play size={15} /> Save &amp; Start Run</button>
+        </>}
+      />
+
+      {fromFactor && (
+        <div className="banner banner-info">
+          <GitBranch size={15} />
+          <span>正在从因子 <Link className="text-link mono" to={`/factors/${fromFactor.id}`}>{fromFactor.id}</Link> 演化。父因子将记录为 <span className="mono">parentFactorId = {fromFactor.id}</span>，随后进入正常 Experiment → Run 流程。</span>
+        </div>
+      )}
+
       <div className="split">
         <div>
           <Panel>
-            <PanelHead eyebrow="Method" title="Miner" />
-            <div className="panel-body">
-              <div className="segmented" style={{ marginBottom: 14 }}>{miners.map((m) => <button key={m.code} className={miner === m.code ? 'active' : ''} onClick={() => setMiner(m.code)} disabled={m.status === 'Not connected'}>{m.code}</button>)}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text-2)' }}>
-                <b style={{ color: 'var(--text)' }}>{minerMeta.name}</b>
-                <Pill tone={minerMeta.status === 'Ready' ? 'success' : 'neutral'}>{minerMeta.status}</Pill>
-              </div>
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-3)' }}>{minerMeta.note} · Artifact: <span className="mono">{minerMeta.artifact}</span></p>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHead eyebrow="Research context" title="Data & target" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>继承自 Project 默认，可 override</span>} />
+            <PanelHead eyebrow="Basic" title="Project & name" aside={<span className="policy-chip">继承 Project 默认，可 override</span>} />
             <div className="panel-body">
               <div className="field-grid">
-                <label className="field"><span>Dataset</span><select><option>Crypto Perpetual 1H v12</option><option>Orderbook Features v4</option></select></label>
-                <label className="field"><span>Universe</span><select>{universes.map((u) => <option key={u.name}>{u.name}</option>)}</select></label>
-                <label className="field"><span>Timeframe</span><select><option>1H</option><option>4H</option><option>5m</option></select></label>
-                <label className="field"><span>Target</span><select>{targets.map((t) => <option key={t.name}>{t.name}</option>)}</select></label>
-                <label className="field"><span>Transaction cost</span><input defaultValue="5 bps" /></label>
-                <label className="field"><span>Validation policy</span><select><option>Standard Alpha Validation v3</option><option>Microstructure Validation v2</option></select></label>
+                <label className="field"><span className="field-label">Project</span>
+                  <select value={projectId} onChange={(e) => { const p = projects.find((x) => x.id === e.target.value)!; setProjectId(p.id); setContext({ dataset: p.defaultDataset, universe: p.defaultUniverse, timeframe: p.defaultTimeframe, target: p.defaultTarget, cost: p.transactionCost, policy: p.validationPolicy }); }}>
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </label>
+                <label className="field"><span className="field-label">Experiment name</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：Funding Reversal · Autonomous Research" /></label>
               </div>
             </div>
           </Panel>
 
           <Panel>
-            <PanelHead eyebrow="Search space" title="Features" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>{selectedFeatures.length} selected</span>} />
-            <div className="panel-body"><div className="tag-row">{featureGroups.map((f) => <button key={f} className={`chip-toggle ${selectedFeatures.includes(f) ? 'on' : ''}`} onClick={() => setSelectedFeatures((s) => s.includes(f) ? s.filter((x) => x !== f) : [...s, f])}>{selectedFeatures.includes(f) && <Check size={13} />}{f}</button>)}</div></div>
+            <PanelHead eyebrow="Research context" title="Objective & hypothesis" aside={<span className="policy-chip">Optional metadata</span>} />
+            <div className="panel-body">
+              <div className="schema-form">
+                <div className="field-grid">
+                  <label className="field field-wide"><span className="field-label">Research objective</span><textarea rows={2} value={meta.objective} onChange={(e) => setMeta({ ...meta, objective: e.target.value })} placeholder="这次研究要回答的高层目标" /></label>
+                  <label className="field field-wide"><span className="field-label">Research question</span><input value={meta.question} onChange={(e) => setMeta({ ...meta, question: e.target.value })} placeholder="具体、可验证的研究问题" /></label>
+                  <label className="field field-wide"><span className="field-label">Hypothesis</span><textarea rows={2} value={meta.hypothesis} onChange={(e) => setMeta({ ...meta, hypothesis: e.target.value })} placeholder="可验证的市场假设与预期方向" /></label>
+                  <label className="field field-wide"><span className="field-label">Notes</span><input value={meta.notes} onChange={(e) => setMeta({ ...meta, notes: e.target.value })} placeholder="补充说明" /></label>
+                </div>
+              </div>
+            </div>
           </Panel>
 
           <Panel>
-            <PanelHead eyebrow="Search space" title="Operators" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>{selectedOps.length} selected</span>} />
-            <div className="panel-body"><div className="tag-row">{operators.map((o) => <button key={o} className={`chip-toggle ${selectedOps.includes(o) ? 'on' : ''}`} onClick={() => setSelectedOps((s) => s.includes(o) ? s.filter((x) => x !== o) : [...s, o])}>{selectedOps.includes(o) && <Check size={13} />}{o}</button>)}</div></div>
+            <PanelHead eyebrow="Data & target" title="Research configuration" />
+            <div className="panel-body">
+              <div className="field-grid">
+                <label className="field"><span className="field-label">Dataset</span><select value={context.dataset} onChange={(e) => setContextField('dataset', e.target.value)}>{[project.defaultDataset, 'Orderbook Features v4', 'US Equity Daily v8'].map((d) => <option key={d}>{d}</option>)}</select></label>
+                <label className="field"><span className="field-label">Universe</span><select value={context.universe} onChange={(e) => setContextField('universe', e.target.value)}>{universes.map((u) => <option key={u.name}>{u.name}</option>)}</select></label>
+                <label className="field"><span className="field-label">Timeframe</span><select value={context.timeframe} onChange={(e) => setContextField('timeframe', e.target.value)}>{['1H', '4H', '5m', '1D'].map((t) => <option key={t}>{t}</option>)}</select></label>
+                <label className="field"><span className="field-label">Target</span><select value={context.target} onChange={(e) => setContextField('target', e.target.value)}>{targets.map((t) => <option key={t.name}>{t.name}</option>)}</select></label>
+                <label className="field"><span className="field-label">Transaction cost</span><input value={context.cost} onChange={(e) => setContextField('cost', e.target.value)} /></label>
+                <label className="field"><span className="field-label">Validation policy</span><select value={context.policy} onChange={(e) => setContextField('policy', e.target.value)}>{['Standard Alpha Validation v3', 'Microstructure Validation v2', 'Equity Validation v1'].map((p) => <option key={p}>{p}</option>)}</select></label>
+              </div>
+              <label className="field field-wide" style={{ marginTop: 14 }}>
+                <span className="field-label">Feature space</span>
+                <div className="tag-row">{featureGroups.map((f) => { const on = selectedFeatures.includes(f); return <button type="button" key={f} className={`chip-toggle ${on ? 'on' : ''}`} onClick={() => setSelectedFeatures((s) => on ? s.filter((x) => x !== f) : [...s, f])}>{on && <Check size={13} />}{f}</button>; })}</div>
+              </label>
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHead eyebrow="Method" title="Choose Miner" aside={<span className="policy-chip">用户直接选择 Miner</span>} />
+            <div className="panel-body">
+              <div className="miner-grid">
+                {availableMiners.map((m) => (
+                  <button key={m.id} className={`miner-card ${minerId === m.id ? 'active' : ''}`} onClick={() => pickMiner(m.id)}>
+                    <div className="miner-card-head"><b>{m.name}</b>{minerId === m.id && <Check size={15} />}</div>
+                    <span className="paradigm-tag">{paradigmLabels[m.paradigm]}{m.type ? ` · ${m.type}` : ''}</span>
+                    <p>{m.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHead eyebrow={`${miner.name} · ${paradigmLabels[miner.paradigm]}`} title="Miner configuration" aside={<span className="policy-chip mono">schema v{miner.version}</span>} />
+            <div className="panel-body">
+              <SchemaForm schema={miner.configSchema} values={config} onChange={(k, v) => setConfig((c) => ({ ...c, [k]: v }))} />
+            </div>
+            <div className="panel-note">此表单由 <span className="mono">{miner.id}.configSchema</span> 动态生成。新增/删除参数只需修改 Schema，无需改动 Experiment Builder。</div>
           </Panel>
         </div>
 
@@ -267,16 +210,23 @@ export function MiningFlow() {
           <Panel>
             <PanelHead eyebrow="Objective" title="Fitness" />
             <div className="panel-body">
-              <label className="field"><span>Fitness function</span><select><option>RankIC - λ·turnover</option><option>IC</option><option>ICIR</option></select></label>
-              {miner === 'GP' && <label className="field" style={{ marginTop: 12 }}><span>Max expression depth</span><input defaultValue="8" /></label>}
-              {miner === 'RL' && <label className="field" style={{ marginTop: 12 }}><span>Reward shaping</span><input defaultValue="IC delta per step" /></label>}
-              {miner === 'LLM' && <label className="field" style={{ marginTop: 12 }}><span>Reflection rounds</span><input defaultValue="3" /></label>}
+              <label className="field"><span className="field-label">Fitness function</span><select><option>RankIC - λ·turnover</option><option>IC</option><option>ICIR</option><option>Sharpe</option></select></label>
             </div>
           </Panel>
           <Panel>
+            <PanelHead eyebrow="Summary" title="Experiment preview" />
             <div className="panel-body">
-              <div className="banner banner-info"><Sparkles size={15} /> 当前为 Demo 引擎，保存后将创建确定性演示 Run。</div>
+              <dl className="kv">
+                <dt>Project</dt><dd>{project.name}</dd>
+                <dt>Miner</dt><dd>{miner.name}</dd>
+                <dt>Paradigm</dt><dd>{paradigmLabels[miner.paradigm]}</dd>
+                <dt>Universe</dt><dd className="mono">{context.universe}</dd>
+                <dt>Target</dt><dd>{context.target}</dd>
+                <dt>Features</dt><dd className="mono">{selectedFeatures.length} groups</dd>
+                <dt>Policy</dt><dd>{context.policy}</dd>
+              </dl>
             </div>
+            <div className="panel-note">保存后生成不可变 Run 快照。所有 Miner 遵循同一 Experiment → Run 流程。</div>
           </Panel>
         </div>
       </div>
@@ -284,50 +234,171 @@ export function MiningFlow() {
   );
 }
 
+/* ============================ Experiment Detail ============================ */
+
+export function ExperimentDetail() {
+  const { id = 'EXP-184' } = useParams();
+  const experiment = experiments.find((e) => e.id === id) || experiments[0];
+  const project = projects.find((p) => p.id === experiment.projectId);
+  const miner = getMiner(experiment.minerId)!;
+  const [tab, setTab] = useState('Overview');
+  const tabs = ['Overview', 'Configuration', 'Runs', 'Results'];
+
+  // runs of this experiment
+  const expRunList = experimentRuns(experiment.id);
+  const expFactors = factors.filter((f) => f.originExperimentId === experiment.id);
+  const latest = expRunList[0];
+
+  return (
+    <div className="page">
+      <div className="scope-head">
+        <div className="eyebrow">Experiment · {experiment.id}</div>
+        <div className="scope-top">
+          <div><h1>{experiment.name}</h1><p className="scope-desc">{experiment.researchQuestion || experiment.objective}</p></div>
+          <div className="head-actions"><Link className="btn" to={`/experiments/new?project=${experiment.projectId}`}><Clipboard size={14} /> Duplicate</Link><Link className="btn btn-primary" to="/runs/RUN-184-03"><Play size={15} /> Start New Run</Link></div>
+        </div>
+        <dl className="scope-meta">
+          <div><dt>Status</dt><dd><Pill>{experiment.status}</Pill></dd></div>
+          <div><dt>Project</dt><dd><Link className="text-link" to={`/projects/${experiment.projectId}`}>{project?.name}</Link></dd></div>
+          <div><dt>Miner</dt><dd>{miner.name}</dd></div>
+          <div><dt>Paradigm</dt><dd><span className="paradigm-tag">{paradigmLabels[miner.paradigm]}</span></dd></div>
+          <div><dt>Total runs</dt><dd className="mono">{experiment.totalRuns}</dd></div>
+          <div><dt>Active runs</dt><dd className="mono">{experiment.activeRuns}</dd></div>
+        </dl>
+        <div className="tabs">{tabs.map((t) => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}</div>
+      </div>
+
+      {tab === 'Overview' && (
+        <div className="split">
+          <div>
+            {(experiment.objective || experiment.hypothesis) && (
+              <Panel>
+                <PanelHead eyebrow="Research context" title="Objective, question & hypothesis" />
+                <div className="panel-body">
+                  <dl className="kv">
+                    {experiment.objective && <><dt>Objective</dt><dd>{experiment.objective}</dd></>}
+                    {experiment.researchQuestion && <><dt>Question</dt><dd>{experiment.researchQuestion}</dd></>}
+                    {experiment.hypothesis && <><dt>Hypothesis</dt><dd>{experiment.hypothesis}</dd></>}
+                    {experiment.notes && <><dt>Notes</dt><dd>{experiment.notes}</dd></>}
+                  </dl>
+                </div>
+              </Panel>
+            )}
+            <Panel>
+              <PanelHead eyebrow="Runs" title="Execution history" aside={<Link className="text-link" to="/runs">All runs <ChevronRight size={13} /></Link>} />
+              <div className="table-wrap"><table className="data"><thead><tr><th>Run</th><th>Status</th><th>Progress</th><th className="num-cell">Factors</th></tr></thead><tbody>{expRunList.map((r) => <tr key={r.id}><td><Link className="cell-main text-link mono" to={`/runs/${r.id}`}>{r.id}</Link><span className="cell-sub">seed {r.seed}</span></td><td><Pill>{r.status}</Pill></td><td><div className="table-progress"><div className="progress thin"><span style={{ width: `${r.percentage}%` }} /></div><small>{r.percentage}%</small></div></td><td className="mono num-cell">{r.persisted}</td></tr>)}{expRunList.length === 0 && <tr><td colSpan={4}><Empty inline title="No runs yet" text="启动第一个 Run。" /></td></tr>}</tbody></table></div>
+            </Panel>
+          </div>
+          <Panel>
+            <PanelHead eyebrow="Latest run" title="Summary" />
+            <div className="panel-body">
+              {latest ? (
+                <dl className="kv">
+                  <dt>Run</dt><dd><Link className="text-link mono" to={`/runs/${latest.id}`}>{latest.id}</Link></dd>
+                  <dt>Status</dt><dd><Pill>{latest.status}</Pill></dd>
+                  <dt>Stage</dt><dd className="mono">{latest.progress.stageUnit} {latest.progress.current}/{latest.progress.total}</dd>
+                  <dt>Candidates</dt><dd className="mono">{latest.generated.toLocaleString()}</dd>
+                  <dt>Persisted</dt><dd className="mono">{latest.persisted}</dd>
+                  <dt>Universe</dt><dd className="mono">{experiment.universe}</dd>
+                  <dt>Target</dt><dd>{experiment.target}</dd>
+                </dl>
+              ) : <Empty inline title="No runs" />}
+            </div>
+          </Panel>
+        </div>
+      )}
+
+      {tab === 'Configuration' && (
+        <Panel>
+          <PanelHead eyebrow="Configuration" title="Full experiment configuration" aside={<span className="policy-chip mono">{miner.id} · v{miner.version}</span>} />
+          <div className="panel-body"><pre className="code-block">{JSON.stringify({ project: experiment.projectId, name: experiment.name, context: { dataset: experiment.dataset, universe: experiment.universe, timeframe: experiment.timeframe, target: experiment.target }, features: featureGroups.slice(0, 4), miner: miner.id, paradigm: miner.paradigm, minerConfig: defaultConfig(miner.id), fitness: 'RankIC - λ·turnover', split: { train: '2022.01—2024.12', validation: '2025.01—2025.06', oos: '2025.07—2026.08' }, validationPolicy: 'Standard Alpha Validation v3' }, null, 2)}</pre></div>
+        </Panel>
+      )}
+
+      {tab === 'Runs' && (
+        <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Run</th><th>Status</th><th>Started</th><th className="num-cell">Candidates</th><th className="num-cell">Factors</th></tr></thead><tbody>{expRunList.map((r) => <tr key={r.id}><td><Link className="text-link mono" to={`/runs/${r.id}`}>{r.id}</Link></td><td><Pill>{r.status}</Pill></td><td>{r.started}</td><td className="mono num-cell">{r.generated.toLocaleString()}</td><td className="mono num-cell">{r.persisted}</td></tr>)}</tbody></table></div></Panel>
+      )}
+
+      {tab === 'Results' && (
+        <div className="split">
+          <Panel>
+            <PanelHead eyebrow="Results · Factors" title="Persisted factors" />
+            <div className="table-wrap"><table className="data"><thead><tr><th>Factor</th><th>Lifecycle</th><th className="num-cell">IC</th><th className="num-cell">OOS IC</th></tr></thead><tbody>{expFactors.map((f) => <tr key={f.id}><td><Link className="text-link" to={`/factors/${f.id}`}>{f.name}</Link><span className="cell-sub mono">{f.id}</span></td><td><Pill>{f.lifecycle}</Pill></td><td className="mono num-cell">{f.metrics.ic?.toFixed(3)}</td><td className="mono num-cell">{f.metrics.oosIc?.toFixed(3)}</td></tr>)}{expFactors.length === 0 && <tr><td colSpan={4}><Empty inline title="No persisted factors" /></td></tr>}</tbody></table></div>
+          </Panel>
+          <Panel>
+            <PanelHead eyebrow="Results · Validation" title="Formal validation" aside={<Link className="text-link" to="/validation">Validation Center <ChevronRight size={13} /></Link>} />
+            <div className="panel-body">
+              <p style={{ fontSize: 13, color: 'var(--text-2)', margin: '0 0 12px' }}>正式验证在因子持久化之后进行，独立于 Run 内的挖掘评估。</p>
+              <dl className="kv">
+                <dt>Validation runs</dt><dd className="mono">{validationRuns.filter((v) => v.factorIds.some((fid) => expFactors.some((f) => f.id === fid))).length}</dd>
+                <dt>Latest outcome</dt><dd><Pill tone="success" noDot>PASS</Pill> / <Pill tone="danger" noDot>FAIL</Pill></dd>
+              </dl>
+            </div>
+          </Panel>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function experimentRuns(expId: string) {
+  return runs.filter((r) => r.experimentId === expId);
+}
+
 /* ============================ Factor Library ============================ */
 
-export function FactorLibrary() {
+export function FactorLibrary({ kind }: { kind?: string }) {
   const { id } = useParams();
-  const [query, setQuery] = useState('');
-  const [chosen, setChosen] = useState<string[]>([]);
-  const list = useMemo(() => factors.filter((f) => `${f.name}${f.expression}${f.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())), [query]);
+  const [params] = useSearchParams();
   const project = id ? projects.find((p) => p.id === id) : undefined;
+  const experimentScope = params.get('experiment');
+  const [query, setQuery] = useState('');
+  const [minerFilter, setMinerFilter] = useState('All');
+  const [lifecycleFilter, setLifecycleFilter] = useState('All');
+
+  let scoped = factors;
+  if (project) scoped = scoped.filter((f) => f.originProjectId === project.id);
+  if (experimentScope) scoped = scoped.filter((f) => f.originExperimentId === experimentScope);
+
+  const list = scoped.filter((f) =>
+    `${f.name}${f.id}`.toLowerCase().includes(query.toLowerCase())
+    && (minerFilter === 'All' || f.originMinerId === minerFilter)
+    && (lifecycleFilter === 'All' || f.lifecycle === lifecycleFilter));
+
+  if (kind === 'Compare') return <FactorCompare pool={scoped} />;
+
+  const toolbar = (
+    <div className="toolbar">
+      <div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索因子名或 ID" /></div>
+      <label className="field-inline"><span>Miner</span><select value={minerFilter} onChange={(e) => setMinerFilter(e.target.value)}><option value="All">All</option>{minerRegistry.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></label>
+      <label className="field-inline"><span>Lifecycle</span><select value={lifecycleFilter} onChange={(e) => setLifecycleFilter(e.target.value)}><option>All</option><option>Discovered</option><option>Reviewed</option><option>Validated</option><option>Promoted</option><option>Retired</option></select></label>
+    </div>
+  );
 
   const table = (
     <Panel>
       <div className="table-wrap">
         <table className="data">
-          <thead><tr><th style={{ width: 32 }} /><th>Factor</th><th>Lifecycle</th><th>Miner</th><th className="num-cell">IC</th><th className="num-cell">RankIC</th><th className="num-cell">ICIR</th><th className="num-cell">OOS IC</th><th className="num-cell">Turnover</th><th>Origin</th></tr></thead>
+          <thead><tr><th>Factor</th><th>Origin</th><th>Lifecycle</th><th className="num-cell">IC</th><th className="num-cell">RankIC</th><th className="num-cell">ICIR</th><th className="num-cell">OOS IC</th><th>Validation</th><th>Created</th></tr></thead>
           <tbody>
             {list.map((f) => (
               <tr key={f.id}>
-                <td><input type="checkbox" checked={chosen.includes(f.id)} disabled={!chosen.includes(f.id) && chosen.length >= 4} onChange={() => setChosen((s) => s.includes(f.id) ? s.filter((x) => x !== f.id) : [...s, f.id])} /></td>
-                <td><Link className="cell-main text-link" to={`/inspector?factor=${f.id}`}>{f.name}</Link><span className="cell-expr">{f.expression}</span></td>
+                <td><Link className="cell-main text-link" to={`/factors/${f.id}`}>{f.name}</Link><span className="cell-sub mono">{f.id}</span></td>
+                <td><span className="tag">{minerName(f.originMinerId)}</span><span className="cell-sub">{f.paradigm} · {f.originExperimentId}</span></td>
                 <td><Pill>{f.lifecycle}</Pill></td>
-                <td><span className="tag">{f.miner}</span></td>
-                <td className="mono num-cell">{f.ic.toFixed(3)}</td>
-                <td className="mono num-cell">{f.rankIc.toFixed(3)}</td>
-                <td className="mono num-cell">{f.icir.toFixed(2)}</td>
-                <td className="mono num-cell">{f.oosIc.toFixed(3)}</td>
-                <td className="mono num-cell">{f.turnover.toFixed(1)}%</td>
-                <td><Link className="text-link mono" style={{ fontSize: 12 }} to={`/experiments/${f.experimentId}`}>{f.experimentId}</Link></td>
+                <td className="mono num-cell strong">{f.metrics.ic?.toFixed(3)}</td>
+                <td className="mono num-cell">{f.metrics.rankIc?.toFixed(3)}</td>
+                <td className="mono num-cell">{f.metrics.icir?.toFixed(2)}</td>
+                <td className="mono num-cell">{f.metrics.oosIc?.toFixed(3)}</td>
+                <td><OutcomePill outcome={f.latestOutcome} /></td>
+                <td style={{ fontSize: 12, color: 'var(--text-4)' }}>{f.created}</td>
               </tr>
             ))}
+            {list.length === 0 && <tr><td colSpan={9}><Empty inline title="No factors" text="仅持久化因子会出现在库中。" /></td></tr>}
           </tbody>
         </table>
       </div>
     </Panel>
-  );
-
-  const toolbar = (
-    <div className="toolbar">
-      <div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索名称、表达式或标签" /></div>
-      <button className="btn">Lifecycle: All</button>
-      <button className="btn">Sort: OOS IC</button>
-      <div className="toolbar-spacer" />
-      {chosen.length > 0 && <Link className="btn btn-primary" to="/compare"><GitCompareArrows size={15} /> Compare ({chosen.length}/4)</Link>}
-      <button className="btn"><Download size={15} /> Export</button>
-    </div>
   );
 
   if (project) {
@@ -335,8 +406,8 @@ export function FactorLibrary() {
       <div className="page">
         <div className="scope-head">
           <div className="eyebrow">Project · {project.id}</div>
-          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目内产生或使用的因子。Origin 表示来源，不代表所有权。</p></div></div>
-          <div className="tabs">{[['Overview', `/projects/${project.id}`], ['Experiments', `/projects/${project.id}/experiments`], ['Runs', `/projects/${project.id}/runs`], ['Factors', `/projects/${project.id}/factors`], ['Validation', `/projects/${project.id}/validation`]].map(([l, t]) => <Link key={l} to={t} className={l === 'Factors' ? 'active' : ''}>{l}</Link>)}</div>
+          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内的持久化因子。</p></div></div>
+          <ProjectScope id={project.id} active="Factors" />
         </div>
         {toolbar}{table}
       </div>
@@ -345,234 +416,223 @@ export function FactorLibrary() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Factors" title="Factor Library" description="Workspace 级研究资产。因子可被多个 Project 复用、重新验证并进入组合。指标始终绑定验证上下文。" />
+      <PageHead eyebrow="Factors" title="Global Factor Library" description="所有 Miner 产生的持久化因子进入同一个库。Miner 只作为来源元数据与筛选维度；入库之后所有因子共用同一套 Inspector / Validation / Portfolio。" />
       {toolbar}{table}
     </div>
   );
 }
 
-/* ============================ Factor Inspector ============================ */
+function OutcomePill({ outcome }: { outcome: Factor['latestOutcome'] }) {
+  if (outcome === 'PASS') return <Pill tone="success" noDot>PASS</Pill>;
+  if (outcome === 'FAIL') return <Pill tone="danger" noDot>FAIL</Pill>;
+  if (outcome === 'INCONCLUSIVE') return <Pill tone="running" noDot>INCONCLUSIVE</Pill>;
+  return <span className="pill pill-neutral no-dot">Not validated</span>;
+}
 
-export function InspectorPage() {
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const factor = factors.find((f) => f.id === params.get('factor')) || factors[0];
-  const [tab, setTab] = useState('Overview');
-  const [ctx, setCtx] = useState('+4H');
-  const validation = validationResults.find((r) => r.factorId === factor.id && r.target === ctx);
+function FactorCompare({ pool }: { pool: Factor[] }) {
+  const [picked, setPicked] = useState<string[]>(pool.slice(0, 3).map((f) => f.id));
+  const chosen = pool.filter((f) => picked.includes(f.id));
+  const rows = sharedMetrics.filter((m) => m.category !== 'research');
+  return (
+    <div className="page">
+      <PageHead eyebrow="Factors" title="Compare factors" description="并排比较已入库因子的核心指标。所有因子共用同一指标口径。" />
+      <div className="toolbar">
+        <div className="tag-row">{pool.map((f) => { const on = picked.includes(f.id); return <button key={f.id} className={`chip-toggle ${on ? 'on' : ''}`} onClick={() => setPicked((s) => on ? s.filter((x) => x !== f.id) : [...s, f.id].slice(-4))}>{on && <Check size={13} />}{f.name}</button>; })}</div>
+      </div>
+      <Panel>
+        <div className="table-wrap">
+          <table className="data compare-table">
+            <thead><tr><th>Metric</th>{chosen.map((f) => <th key={f.id} className="num-cell">{f.id}</th>)}</tr></thead>
+            <tbody>
+              {rows.map((m) => (
+                <tr key={m.key}><td>{m.label}<span className="cell-sub">{m.higherIsBetter ? '↑ better' : '↓ better'}</span></td>{chosen.map((f) => <td key={f.id} className="mono num-cell">{formatMetric(m.key, f.metrics[m.key])}</td>)}</tr>
+              ))}
+              <tr><td>Validation</td>{chosen.map((f) => <td key={f.id} className="num-cell"><OutcomePill outcome={f.latestOutcome} /></td>)}</tr>
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ============================ Factor Inspector (simplified) ============================ */
+
+export function InspectorPage({ tab: initialTab }: { tab?: string }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const factor = factors.find((f) => f.id === id) || factors[0];
+  const [tab, setTab] = useState(initialTab || 'Overview');
+  const tabs = ['Overview', 'Definition', 'Validation', 'Lineage', 'History'];
+  const project = projects.find((p) => p.id === factor.originProjectId);
+  const results = validationResults.filter((r) => r.factorId === factor.id);
   const lineage = factorLineage[factor.id] || [];
-  const tabs = ['Overview', 'Validation', 'IC Analysis', 'Stability', 'Regime', 'Lineage', 'Artifact'];
 
   return (
     <div className="page">
       <div className="scope-head">
         <div className="eyebrow">Factor · {factor.id}</div>
         <div className="scope-top">
-          <div><h1 className="mono" style={{ fontSize: 20 }}>{factor.name}</h1><p className="scope-desc mono" style={{ fontSize: 13 }}>{factor.expression}</p></div>
-          <div className="head-actions"><button className="btn"><GitCompareArrows size={14} /> Compare</button><button className="btn btn-primary"><Play size={15} /> Run validation</button></div>
+          <div><h1>{factor.name}</h1><p className="scope-desc">{definitionTypeLabels[factor.definition.type]} · from <span className="tag">{minerName(factor.originMinerId)}</span> <span className="paradigm-tag">{factor.paradigm}</span></p></div>
+          <div className="head-actions">
+            <button className="btn" onClick={() => navigate(`/experiments/new?from=${factor.id}`)}><GitBranch size={14} /> Evolve</button>
+            {factor.lifecycle === 'Validated' && <button className="btn btn-primary"><Check size={15} /> Promote</button>}
+          </div>
         </div>
         <dl className="scope-meta">
           <div><dt>Lifecycle</dt><dd><Pill>{factor.lifecycle}</Pill></dd></div>
-          <div><dt>Miner</dt><dd>{factor.miner}</dd></div>
-          <div><dt>Origin project</dt><dd><Link className="text-link" to={`/projects/${factor.originProjectId}`}>{factor.originProjectId}</Link></dd></div>
-          <div><dt>Origin experiment</dt><dd><Link className="text-link mono" to={`/experiments/${factor.experimentId}`}>{factor.experimentId}</Link></dd></div>
-          <div><dt>Origin run</dt><dd><Link className="text-link mono" to={`/runs/${factor.runId}`}>{factor.runId}</Link></dd></div>
-          <div><dt>Complexity</dt><dd className="mono">{factor.complexity.toFixed(2)}</dd></div>
+          <div><dt>Validation</dt><dd><OutcomePill outcome={factor.latestOutcome} /></dd></div>
+          <div><dt>IC</dt><dd className="mono">{factor.metrics.ic?.toFixed(3)}</dd></div>
+          <div><dt>OOS IC</dt><dd className="mono">{factor.metrics.oosIc?.toFixed(3)}</dd></div>
+          <div><dt>ICIR</dt><dd className="mono">{factor.metrics.icir?.toFixed(2)}</dd></div>
+          <div><dt>Turnover</dt><dd className="mono">{factor.metrics.turnover?.toFixed(1)}%</dd></div>
         </dl>
         <div className="tabs">{tabs.map((t) => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}</div>
       </div>
 
-      <div className="banner banner-info" style={{ marginBottom: 16 }}>
-        <span style={{ fontWeight: 600 }}>Validation context</span>
-        <select value={ctx} onChange={(e) => setCtx(e.target.value)} className="input" style={{ height: 30, background: 'var(--surface)', marginLeft: 4 }}>
-          <option value="+4H">Project default · Target +4H · Policy v3</option>
-          <option value="+24H">Target +24H · Policy v3</option>
-        </select>
-        <span style={{ marginLeft: 'auto' }}>Decision: <Pill>{validation?.decision || 'Pending'}</Pill></span>
-      </div>
-
-      <Metrics items={[
-        { label: `IC · ${ctx}`, value: (validation?.ic ?? factor.ic).toFixed(3) },
-        { label: 'RankIC', value: (validation?.rankIc ?? factor.rankIc).toFixed(3) },
-        { label: 'ICIR', value: (validation?.icir ?? factor.icir).toFixed(2) },
-        { label: 'OOS IC', value: (validation?.oosIc ?? factor.oosIc).toFixed(3) },
-        { label: 'Turnover', value: `${factor.turnover.toFixed(1)}%` },
-      ]} />
-
-      <div style={{ marginTop: 16 }}>
-        {tab === 'Overview' && (
-          <>
+      {tab === 'Overview' && (
+        <>
           <ConclusionCard
-            title={`验证结论 · Target ${ctx}`}
-            status={validation?.decision || 'Pending'}
-            statusTone={validation?.decision === 'Accepted' ? 'success' : validation?.decision === 'Rejected' ? 'danger' : 'warn'}
+            statusTone={factor.latestOutcome === 'PASS' ? 'success' : factor.latestOutcome === 'FAIL' ? 'danger' : 'running'}
+            status={factor.latestOutcome === 'Not validated' ? 'Not validated' : String(factor.latestOutcome)}
+            title={`${factor.name} · validation summary`}
             points={[
-              { label: 'Mean IC', icon: <Target size={13} />, value: (validation?.ic ?? factor.ic).toFixed(3), tone: (validation?.ic ?? factor.ic) >= 0 ? 'pos' : 'neg' },
-              { label: '样本外 (OOS IC)', icon: <TrendingUp size={13} />, value: `${(validation?.oosIc ?? factor.oosIc).toFixed(3)} · ICIR ${(validation?.icir ?? factor.icir).toFixed(2)}` },
-              { label: '主要风险', icon: <TrendingDown size={13} />, value: '高波动区间 IC 衰减明显', tone: 'neg' },
-              { label: 'Policy', icon: <AlertTriangle size={13} />, value: validation?.policy || 'Standard Alpha Validation v3' },
+              { label: 'Mean IC', value: factor.metrics.ic?.toFixed(3), tone: 'pos' },
+              { label: 'OOS IC', value: factor.metrics.oosIc?.toFixed(3), tone: 'pos' },
+              { label: 'ICIR', value: factor.metrics.icir?.toFixed(2) },
+              { label: 'Turnover', value: `${factor.metrics.turnover?.toFixed(1)}%` },
             ]}
-            highlights={validation?.decision === 'Accepted' ? ['换手率接近上限', 'OOS 窗口需持续跟踪'] : ['高波动 regime 未通过', '建议缩短持有周期', '样本外 IC 偏低']}
+            highlights={['高波动状态下稳健性需关注', `来源 ${factor.originExperimentId}`]}
           />
-          <div className="split">
-            <div>
-              <Panel>
-                <PanelHead eyebrow="Expression" title="Factor definition" />
-                <div className="panel-body"><div className="expr"><code>{factor.expression}</code><button className="btn btn-sm"><Clipboard size={13} /> Copy</button></div></div>
-              </Panel>
-              <Panel>
-                <PanelHead eyebrow="Research origin" title="Provenance" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>Origin ≠ ownership</span>} />
-                <div className="panel-body">
-                  <div className="origin-chain">
-                    <span className="oc-node"><small>Project</small> {factor.originProjectId}</span><ArrowRight size={14} />
-                    <span className="oc-node"><small>Experiment</small> {factor.experimentId}</span><ArrowRight size={14} />
-                    <span className="oc-node"><small>Run</small> {factor.runId}</span><ArrowRight size={14} />
-                    <span className="oc-node"><small>Factor</small> {factor.id}</span>
-                  </div>
-                </div>
-              </Panel>
-            </div>
+          <div className="split" style={{ marginTop: 16 }}>
             <Panel>
-              <PanelHead eyebrow="Context" title="Validation decisions" />
-              <div className="table-wrap"><table className="data"><thead><tr><th>Context</th><th>Decision</th><th className="num-cell">IC</th></tr></thead><tbody>{validationResults.filter((r) => r.factorId === factor.id).map((r) => <tr key={r.id}><td>Target {r.target}<span className="cell-sub">{r.policy}</span></td><td><Pill>{r.decision}</Pill></td><td className="mono num-cell">{r.ic.toFixed(3)}</td></tr>)}</tbody></table></div>
-              <div className="panel-note">同一因子在不同 Target / Policy 下可得到不同结论。</div>
+              <PanelHead eyebrow="Research origin" title="Provenance" aside={<span className="policy-chip">Project → Experiment → Run</span>} />
+              <div className="panel-body">
+                <dl className="kv">
+                  <dt>Project</dt><dd><Link className="text-link" to={`/projects/${factor.originProjectId}`}>{project?.name}</Link></dd>
+                  <dt>Experiment</dt><dd><Link className="text-link" to={`/experiments/${factor.originExperimentId}`}>{factor.originExperimentId}</Link></dd>
+                  <dt>Run</dt><dd><Link className="text-link mono" to={`/runs/${factor.originRunId}`}>{factor.originRunId}</Link></dd>
+                  <dt>Miner</dt><dd>{minerName(factor.originMinerId)} <span className="paradigm-tag">{factor.paradigm}</span></dd>
+                </dl>
+              </div>
+            </Panel>
+            <Panel>
+              <PanelHead eyebrow="Rolling IC" title="Factor IC vs universe" aside={<span className="policy-chip">OOS shaded</span>} />
+              <div className="panel-body"><LineChart series={icSeries(42, 40)} benchmark={icSeries(9, 40).map((v) => v * 0.5)} seriesLabel="Factor IC" benchmarkLabel="Universe avg" oosFrom={28} labels={Array.from({ length: 40 }, (_, i) => `T${i + 1}`)} /></div>
             </Panel>
           </div>
-          </>
-        )}
+        </>
+      )}
 
-        {tab === 'Validation' && (
-          <Panel>
-            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Validation checklist" aside={<Pill>{validation?.decision || 'Pending'}</Pill>} />
-            <div className="panel-body">
-              <div className="checks">
-                {validationChecks.map((c) => (
-                  <div className="check-row" key={c.key}>
-                    <span className={`check-icon ${c.passed ? 'ok' : 'no'}`}>{c.passed ? <Check size={13} /> : <span style={{ fontWeight: 700 }}>!</span>}</span>
-                    <b>{c.key}</b><span className="check-metric">{c.metric}</span>
-                  </div>
+      {tab === 'Definition' && (
+        <Panel>
+          <PanelHead eyebrow={`Definition · ${factor.definition.type}`} title={definitionTypeLabels[factor.definition.type]} aside={<span className="policy-chip">Renderer registry</span>} />
+          <div className="panel-body"><DefinitionRenderer definition={factor.definition} /></div>
+          <div className="panel-note">定义通过 Definition Renderer Registry 按 <span className="mono">definitionType</span> 渲染；新增已有类型的因子无需修改 Inspector。</div>
+        </Panel>
+      )}
+
+      {tab === 'Validation' && (
+        <Panel>
+          <PanelHead eyebrow="Formal validation" title="Validation results by context" aside={<Link className="text-link" to="/validation">Validation Center <ChevronRight size={13} /></Link>} />
+          <div className="table-wrap">
+            <table className="data">
+              <thead><tr><th>Context</th><th>Target</th><th>Policy</th><th className="num-cell">OOS IC</th><th className="num-cell">ICIR</th><th>Outcome</th></tr></thead>
+              <tbody>
+                {results.map((r) => (
+                  <tr key={r.id}><td className="mono" style={{ fontSize: 12 }}>{r.context.universe}<span className="cell-sub">{r.context.period}</span></td><td>{r.context.target}</td><td style={{ fontSize: 12 }}>{r.context.policy}</td><td className="mono num-cell">{r.metrics.oosIc?.toFixed(3)}</td><td className="mono num-cell">{r.metrics.icir?.toFixed(2)}</td><td><OutcomePill outcome={r.outcome} /></td></tr>
                 ))}
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 14 }}>决策基于 {validation?.policy || 'Standard Alpha Validation v3'}，作用于 Target {ctx}。</p>
+                {results.length === 0 && <tr><td colSpan={6}><Empty inline title="Not validated yet" text="尚未在任何 Context 下进行正式验证。" /></td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div className="panel-note">正式验证独立于 Run 内挖掘评估；同一因子在不同 Context 下可以有不同 Outcome（PASS / FAIL / INCONCLUSIVE）。</div>
+        </Panel>
+      )}
+
+      {tab === 'Lineage' && (
+        <Panel>
+          <PanelHead eyebrow="Factor lineage" title="Derivation graph" aside={<span className="policy-chip">Parent · Mutation · Child</span>} />
+          <div className="panel-body">
+            <div className="lineage-chain">
+              {lineage.map((n) => (
+                <div key={n.id + n.relation} className={`lineage-node ${n.id === factor.id ? 'current' : ''}`}>
+                  <span className="lineage-rel">{n.relation}</span>
+                  <Link className="text-link mono" to={`/factors/${n.id}`}>{n.name}</Link>
+                  <p>{n.note}</p>
+                </div>
+              ))}
+              {lineage.length === 0 && <Empty inline title="No lineage" text="该因子没有记录的派生关系。" />}
             </div>
-          </Panel>
-        )}
+          </div>
+          <div className="panel-note">Lineage 只展示因子间派生关系（父/变异/交叉/子），研究来源（Project/Experiment/Run）在 Overview 的 Provenance 中。</div>
+        </Panel>
+      )}
 
-        {tab === 'IC Analysis' && (
-          <Panel>
-            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Rolling IC (train → OOS)" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>悬停查看每期取值</span>} />
-            <div className="panel-body">
-              <LineChart
-                series={icSeries(factor.turnover, 40)}
-                benchmark={icSeries(factor.turnover + 6, 40).map((v) => v * 0.6)}
-                seriesLabel="Rolling IC" benchmarkLabel="Universe 平均"
-                labels={Array.from({ length: 40 }, (_, i) => `W${i + 1}`)}
-                oosFrom={28} height={210}
-              />
-              <div className="chart-legend"><span><i />Rolling IC</span><span><i className="bench" />Universe 平均</span><span><i className="oos" />OOS window</span><span>Baseline IC = 0</span></div>
-            </div>
-            <div className="panel-note">IC 对应 Dataset crypto-v3.2.1 · Universe Crypto Top50 · Target {ctx}。</div>
-          </Panel>
-        )}
-
-        {tab === 'Stability' && (
-          <Panel>
-            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Yearly IC" />
-            <div className="panel-body"><BarChart series={[{ label: '2022', value: 0.058 }, { label: '2023', value: 0.064 }, { label: '2024', value: 0.049 }, { label: '2025', value: 0.041 }, { label: 'OOS', value: 0.031, muted: true }]} /><div className="chart-legend"><span>数值为各期平均 IC</span></div></div>
-          </Panel>
-        )}
-
-        {tab === 'Regime' && (
-          <Panel>
-            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Regime breakdown" />
-            <div className="panel-body"><BarChart series={[{ label: 'Low vol', value: 0.072 }, { label: 'Mid vol', value: 0.055 }, { label: 'High vol', value: 0.021, muted: true }, { label: 'Trend', value: 0.061 }, { label: 'Range', value: 0.048 }]} /><div className="chart-legend"><span>高波动区间 IC 明显衰减，是当前 context 未通过的主要原因。</span></div></div>
-          </Panel>
-        )}
-
-        {tab === 'Lineage' && (
-          <Panel>
-            <PanelHead eyebrow="Evolution" title="Factor lineage" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>Mutation / Crossover</span>} />
-            <div className="panel-body">
-              {lineage.length === 0 ? <Empty inline title="No lineage" text="该因子没有记录的演化关系。" /> : (
-                <div className="lineage">{lineage.map((n) => <div className="lineage-row" key={n.id + n.relation}><div className="lineage-rel"><span className="pill pill-neutral no-dot">{n.relation}</span></div><div className="lineage-node"><span className="lineage-dot" /><div><Link className="text-link mono" to={`/inspector?factor=${n.id}`}>{n.name}</Link><small style={{ display: 'block', color: 'var(--text-4)', fontSize: 11 }}>{n.note}</small></div></div></div>)}</div>
-              )}
-            </div>
-            <div className="panel-note">Lineage 表示因子间的演化关系，与 Research Origin（Project → Experiment → Run）是不同概念。</div>
-          </Panel>
-        )}
-
-        {tab === 'Artifact' && (
-          <Panel>
-            <PanelHead eyebrow={`${factor.miner} artifact`} title="Generated artifact" />
-            <div className="panel-body">
-              {factor.miner === 'GP' && <pre className="code-block">{`decay(
-  rank(
-    ts_stddev(ret, 24)
-  ),
-  8
-)
-
-# AST depth: 3 · nodes: 5
-# parent: vol_rank_011 (mutation: add decay)`}</pre>}
-              {factor.miner === 'RL' && <pre className="code-block">{`actions = [
-  rank(volatility),
-  ts_op(stddev, 24),
-  decay(8),
-]
-# reward: cumulative IC delta = .054`}</pre>}
-              {factor.miner === 'LLM' && <pre className="code-block">{`# hypothesis: realized vol rank mean-reverts
-def factor(df):
-    return decay(rank(ts_stddev(df.ret, 24)), 8)
-# reflection rounds: 3`}</pre>}
-            </div>
-          </Panel>
-        )}
-      </div>
+      {tab === 'History' && (
+        <Panel>
+          <PanelHead eyebrow="Lifecycle" title="Factor history" />
+          <div className="panel-body">
+            <ol className="timeline">
+              <li><span className="timeline-dot" /><div className="timeline-body"><div className="timeline-head"><b>Discovered</b><span className="mono">{factor.created}</span></div><p>由 {minerName(factor.originMinerId)} 在 {factor.originRunId} 持久化。</p></div></li>
+              <li><span className="timeline-dot" /><div className="timeline-body"><div className="timeline-head"><b>Reviewed</b><span className="mono">今天 09:40</span></div><p>人工评审通过，进入正式验证。</p></div></li>
+              {factor.latestOutcome === 'PASS' && <li><span className="timeline-dot" /><div className="timeline-body"><div className="timeline-head"><b>Validated</b><span className="mono">今天 08:46</span></div><p>正式验证 PASS（Standard Alpha Validation v3）。</p></div></li>}
+              {factor.lifecycle === 'Promoted' && <li><span className="timeline-dot" /><div className="timeline-body"><div className="timeline-head"><b>Promoted</b><span className="mono">昨天 16:40</span></div><p>人工晋升，可用于组合与回测。</p></div></li>}
+            </ol>
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }
 
-/* ============================ Validation, Portfolio, Data, Engine, misc ============================ */
+/* ============================ Validation Center ============================ */
 
-export function Validation({ kind = 'Validation Center' }: { kind?: string }) {
+const validationKinds = ['IC Analysis', 'Stability', 'Regime', 'Walk Forward', 'Overfit'];
+
+export function Validation({ kind }: { kind?: string }) {
   const { id } = useParams();
   const project = id ? projects.find((p) => p.id === id) : undefined;
 
-  const inner = (
+  if (kind === 'Correlation') return <CorrelationView />;
+  if (kind && validationKinds.includes(kind)) return <ValidationAnalysis kind={kind} />;
+
+  const results = project ? validationResults.filter((r) => factors.find((f) => f.id === r.factorId)?.originProjectId === project.id) : validationResults;
+
+  const center = (
     <>
-      <div className="toolbar">
-        <button className="btn">Factor: vol_rank_decay_042</button>
-        <button className="btn">Target: +4H</button>
-        <button className="btn">Policy: Standard Alpha v3</button>
-        <div className="toolbar-spacer" />
-        <button className="btn btn-primary"><Play size={15} /> Run analysis</button>
-      </div>
       <Metrics items={[
-        { label: 'Mean IC', value: '0.061', sub: 'Target +4H' },
-        { label: 'ICIR', value: '1.42' },
-        { label: 'OOS IC', value: '0.054' },
-        { label: 'Coverage', value: '99.7%' },
-        { label: 'Decision', value: <Pill>Accepted</Pill> },
+        { label: 'Validation runs', value: validationRuns.length },
+        { label: 'PASS', value: validationResults.filter((r) => r.outcome === 'PASS').length },
+        { label: 'FAIL', value: validationResults.filter((r) => r.outcome === 'FAIL').length },
+        { label: 'INCONCLUSIVE', value: validationResults.filter((r) => r.outcome === 'INCONCLUSIVE').length },
       ]} />
-      <div className="grid-2" style={{ marginTop: 16 }}>
+      <div className="analysis-nav">
+        {validationKinds.map((k) => <Link key={k} to={`/${k === 'IC Analysis' ? 'validation/ic' : k.toLowerCase().replace(' ', '-')}`} className="analysis-chip">{k}<ArrowRight size={13} /></Link>)}
+      </div>
+      <div className="split">
         <Panel>
-          <PanelHead eyebrow="IC time series" title="Rolling IC" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>悬停查看每期取值</span>} />
-          <div className="panel-body"><LineChart series={icSeries(18, 40)} benchmark={icSeries(24, 40).map((v) => v * 0.6)} seriesLabel="Rolling IC" benchmarkLabel="Universe 平均" labels={Array.from({ length: 40 }, (_, i) => `W${i + 1}`)} oosFrom={28} height={210} /><div className="chart-legend"><span><i />Rolling IC</span><span><i className="bench" />Universe 平均</span><span><i className="oos" />OOS</span></div></div>
+          <PanelHead eyebrow="Validation runs" title="Recent formal validation" aside={<button className="btn btn-primary btn-sm"><Play size={13} /> Start validation</button>} />
+          <div className="table-wrap"><table className="data"><thead><tr><th>Validation run</th><th>Scope</th><th>Status</th><th className="num-cell">P / F / I</th></tr></thead><tbody>{validationRuns.map((v) => <tr key={v.id}><td className="mono">{v.id}<span className="cell-sub">{v.policy}</span></td><td style={{ fontSize: 12 }}>{v.scope}</td><td><Pill>{v.status}</Pill></td><td className="mono num-cell">{v.pass} / {v.fail} / {v.inconclusive}</td></tr>)}</tbody></table></div>
         </Panel>
         <Panel>
-          <PanelHead eyebrow="Decay" title="IC by horizon" />
-          <div className="panel-body"><BarChart series={[{ label: '+1H', value: 0.071 }, { label: '+4H', value: 0.061 }, { label: '+8H', value: 0.043 }, { label: '+24H', value: 0.018, muted: true }]} /><div className="chart-legend"><span>预测能力随周期衰减</span></div></div>
+          <PanelHead eyebrow="Validation policy" title="Standard Alpha Validation v3" />
+          <div className="panel-body">
+            <ul className="check-list">
+              {validationChecks.map((c) => (
+                <li key={c.key} className={c.passed ? 'ok' : 'bad'}>
+                  {c.passed ? <Check size={14} /> : <AlertTriangle size={14} />}
+                  <span>{c.key}</span><span className="mono">{c.metric}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="panel-note">正式验证（Formal Validation）在因子入库后进行，与 Run 内挖掘评估（Mining Evaluation）分离：搜索期 Fitness 高不等于验证 PASS。</div>
         </Panel>
       </div>
       <Panel>
-        <PanelHead eyebrow="Regime" title="各市场状态 IC 贡献" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>相对全样本均值的偏离</span>} />
-        <div className="panel-body"><DivergingBars items={[{ label: 'Low vol', value: 0.011 }, { label: 'Mid vol', value: -0.006 }, { label: 'High vol', value: -0.040 }, { label: 'Trend', value: 0.000 }, { label: 'Range', value: -0.013 }]} valueFormat={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(3)}`} /></div>
-        <div className="panel-note">高波动区间对整体 IC 的拖累最明显，是 context 决策的关键依据。</div>
-      </Panel>
-      <Panel>
-        <PanelHead eyebrow="Diagnostics" title="Validation checklist" />
-        <div className="panel-body"><div className="checks">{validationChecks.map((c) => <div className="check-row" key={c.key}><span className={`check-icon ${c.passed ? 'ok' : 'no'}`}>{c.passed ? <Check size={13} /> : <span style={{ fontWeight: 700 }}>!</span>}</span><b>{c.key}</b><span className="check-metric">{c.metric}</span></div>)}</div></div>
-        <div className="panel-note">结果仅作为研究证据，绑定明确的 Target 与 Policy，不构成最终策略有效性结论。</div>
+        <PanelHead eyebrow="Results" title="Validation results by context" />
+        <div className="table-wrap"><table className="data"><thead><tr><th>Factor</th><th>Context</th><th>Target</th><th className="num-cell">OOS IC</th><th>Stability</th><th>Outcome</th></tr></thead><tbody>{results.map((r) => { const f = factors.find((x) => x.id === r.factorId); return <tr key={r.id}><td><Link className="text-link" to={`/factors/${r.factorId}`}>{f?.name || r.factorId}</Link></td><td className="mono" style={{ fontSize: 12 }}>{r.context.universe}</td><td>{r.context.target}</td><td className="mono num-cell">{r.metrics.oosIc?.toFixed(3)}</td><td style={{ fontSize: 12 }}>{r.stability}</td><td><OutcomePill outcome={r.outcome} /></td></tr>; })}</tbody></table></div>
       </Panel>
     </>
   );
@@ -582,163 +642,243 @@ export function Validation({ kind = 'Validation Center' }: { kind?: string }) {
       <div className="page">
         <div className="scope-head">
           <div className="eyebrow">Project · {project.id}</div>
-          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目验证策略：{project.validationPolicy}</p></div></div>
-          <div className="tabs">{[['Overview', `/projects/${project.id}`], ['Experiments', `/projects/${project.id}/experiments`], ['Runs', `/projects/${project.id}/runs`], ['Factors', `/projects/${project.id}/factors`], ['Validation', `/projects/${project.id}/validation`]].map(([l, t]) => <Link key={l} to={t} className={l === 'Validation' ? 'active' : ''}>{l}</Link>)}</div>
+          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内的正式验证。</p></div></div>
+          <ProjectScope id={project.id} active="Validation" />
         </div>
-        {inner}
+        {center}
       </div>
     );
   }
 
   return (
     <div className="page">
-      <PageHead eyebrow="Validation" title={kind} description="每个指标都属于明确的验证上下文（Dataset / Universe / Target / Period / Policy）。" />
-      {inner}
+      <PageHead eyebrow="Validation" title="Validation Center" description="因子入库后的正式验证：在明确研究 Context 下判断因子是否可靠。与 Run 内挖掘评估严格分离。" />
+      {center}
     </div>
   );
 }
 
-export function Backtest() {
-  const [running, setRunning] = useState(false);
+function ValidationAnalysis({ kind }: { kind: string }) {
+  const factor = factors[0];
   return (
     <div className="page">
-      <PageHead eyebrow="Portfolio" title="Backtest" description="仅用于研究评估，不连接实盘。无真实引擎时明确标注为 Demo 结果。" actions={<Pill tone="neutral">Demo engine</Pill>} />
-      <div className="split">
-        <Panel>
-          <PanelHead eyebrow="Configuration" title="Portfolio setup" />
-          <div className="panel-body">
-            <div className="field-grid">
-              {[['Factor combination', 'vol_rank_decay_042 + funding_mean_rev'], ['Weighting', 'Equal weight'], ['Rebalance', '4H'], ['Direction', 'Long / Short'], ['Holdings', '20'], ['Cost / slippage', '5bps / 2bps'], ['Period', '2025.07 — 2026.08'], ['Benchmark', 'BTC Buy & Hold']].map(([l, v]) => <label className="field" key={l}><span>{l}</span><select defaultValue={v}><option>{v}</option><option>Custom</option></select></label>)}
-            </div>
-            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setRunning(true)}><Play size={15} /> {running ? 'Backtest queued' : 'Run backtest'}</button>
-          </div>
-        </Panel>
-        <Panel>
-          <PanelHead eyebrow="Result" title="Preview" />
-          <div className="panel-body">
-            {running ? (
-              <>
-                <Metrics items={[{ label: 'Annual return', value: '18.4%' }, { label: 'Sharpe', value: '1.32' }, { label: 'Max DD', value: '-12.8%' }]} />
-                <div style={{ marginTop: 16 }}>
-                  <div className="eyebrow" style={{ marginBottom: 8 }}>Net value · 组合 vs 基准</div>
-                  <LineChart
-                    series={icSeries(9, 36).map((v, i) => 1 + v * 4 + i * 0.02)}
-                    benchmark={icSeries(15, 36).map((v, i) => 1 + v * 2 + i * 0.012)}
-                    seriesLabel="组合净值" benchmarkLabel="BTC Buy & Hold"
-                    labels={Array.from({ length: 36 }, (_, i) => `M${i + 1}`)}
-                    baseline={1} height={200} valueFormat={(v) => v.toFixed(3)}
-                  />
-                  <div className="chart-legend"><span><i />组合净值</span><span><i className="bench" />BTC Buy &amp; Hold</span></div>
-                </div>
-                <div style={{ marginTop: 18 }}>
-                  <div className="eyebrow" style={{ marginBottom: 10 }}>成本结构分解 (bps)</div>
-                  <Gauge segments={[{ label: '手续费', value: 5, color: 'var(--accent)' }, { label: '滑点', value: 2, color: 'var(--warn)' }, { label: '冲击成本', value: 1.4, color: 'var(--neg)' }]} />
-                </div>
-                <div style={{ marginTop: 18 }}>
-                  <div className="eyebrow" style={{ marginBottom: 10 }}>收益归因 (年化 %)</div>
-                  <Waterfall items={[{ label: '基准', value: 6.2, kind: 'base' }, { label: '选股 alpha', value: 9.4 }, { label: '择时', value: 3.1 }, { label: '成本', value: -2.8 }, { label: '组合', value: 18.4, kind: 'total' }]} />
-                </div>
-              </>
-            ) : <Empty title="Run to compute" text="没有可靠估算时不预填结果。" />}
-          </div>
-        </Panel>
+      <PageHead eyebrow={`Validation · ${kind}`} title={`${kind} analysis`} description={`对已入库因子进行 ${kind} 分析，作为正式验证的组成部分。`} actions={<Link className="btn" to="/validation"><ChevronRight size={15} /> Validation Center</Link>} />
+      <div className="analysis-nav">
+        {validationKinds.map((k) => <Link key={k} to={`/${k === 'IC Analysis' ? 'validation/ic' : k.toLowerCase().replace(' ', '-')}`} className={`analysis-chip ${k === kind ? 'active' : ''}`}>{k}</Link>)}
       </div>
+      {kind === 'IC Analysis' && (
+        <Panel><PanelHead eyebrow="IC Analysis" title="Rolling IC · factor vs universe" aside={<span className="policy-chip">OOS shaded</span>} /><div className="panel-body"><LineChart series={icSeries(42, 40)} benchmark={icSeries(9, 40).map((v) => v * 0.5)} seriesLabel="Factor IC" benchmarkLabel="Universe avg" oosFrom={28} labels={Array.from({ length: 40 }, (_, i) => `T${i + 1}`)} /></div></Panel>
+      )}
+      {kind === 'Stability' && (
+        <Panel><PanelHead eyebrow="Stability" title="IC stability across sub-periods" /><div className="panel-body"><DivergingBars items={[{ label: '2025 Q1', value: 0.052 }, { label: '2025 Q2', value: 0.041 }, { label: '2025 Q3', value: 0.033 }, { label: '2025 Q4', value: -0.008 }, { label: '2026 Q1', value: 0.047 }]} valueFormat={(v) => v.toFixed(3)} /></div></Panel>
+      )}
+      {kind === 'Regime' && (
+        <Panel><PanelHead eyebrow="Regime" title="IC contribution by market regime" /><div className="panel-body"><DivergingBars items={[{ label: 'Low volatility', value: 0.061 }, { label: 'Trending', value: 0.048 }, { label: 'Range-bound', value: 0.022 }, { label: 'High volatility', value: -0.012 }]} valueFormat={(v) => v.toFixed(3)} /></div><div className="panel-note">高波动状态下 IC 转负，需在正式验证结论中标注 regime robustness 风险。</div></Panel>
+      )}
+      {kind === 'Walk Forward' && (
+        <Panel><PanelHead eyebrow="Walk Forward" title="Out-of-sample walk-forward IC" /><div className="panel-body"><LineChart series={icSeries(15, 36)} baseline={0} labels={Array.from({ length: 36 }, (_, i) => `W${i + 1}`)} /></div></Panel>
+      )}
+      {kind === 'Overfit' && (
+        <Panel><PanelHead eyebrow="Overfit" title="In-sample vs out-of-sample" /><div className="panel-body"><LineChart series={icSeries(42, 40)} benchmark={icSeries(42, 40).map((v, i) => v - 0.01 - i * 0.0004)} seriesLabel="In-sample" benchmarkLabel="Out-of-sample" labels={Array.from({ length: 40 }, (_, i) => `T${i + 1}`)} /></div><div className="panel-note">样本内外差距用于评估过拟合程度；差距越大越可能过拟合。Factor: {factor.name}。</div></Panel>
+      )}
     </div>
   );
 }
 
-export function DataCenter({ kind = 'Datasets' }: { kind?: string }) {
-  if (kind === 'Universes') return <SimpleTable eyebrow="Data" title="Universes" desc="研究可选的资产池。" cols={['Universe', 'Assets', 'Timeframe', 'Note']} rows={universes.map((u) => [u.name, String(u.assets), u.timeframe, u.note])} />;
-  if (kind === 'Targets') return <SimpleTable eyebrow="Data" title="Targets" desc="预测目标定义。所有 IC 指标都绑定具体 Target。" cols={['Target', 'Horizon', 'Note']} rows={targets.map((t) => [t.name, t.horizon, t.note])} />;
-  if (kind === 'Features') return (
-    <div className="page"><PageHead eyebrow="Data" title="Features" description="特征分组构成搜索空间。" />
-      <div className="card-grid">{featureGroups.map((f) => <div className="mini-card" key={f}><h3>{f}</h3><p>可用于 Miner 搜索空间</p></div>)}</div>
-    </div>
-  );
+function CorrelationView() {
+  const list = factors.slice(0, 4);
   return (
     <div className="page">
-      <PageHead eyebrow="Data" title="Datasets" description="数据连接状态、覆盖率与版本。真实密钥由后端安全存储，不在前端显示。" actions={<button className="btn"><RefreshCw size={15} /> Refresh</button>} />
+      <PageHead eyebrow="Factors" title="Correlation" description="已入库因子之间的相关性矩阵，用于控制组合内冗余。" />
       <Panel>
-        <div className="table-wrap"><table className="data"><thead><tr><th>Dataset</th><th>Status</th><th className="num-cell">Coverage</th><th className="num-cell">Assets</th><th>Range</th></tr></thead><tbody>{datasets.map((d) => <tr key={d.name}><td className="cell-main">{d.name}</td><td><Pill>{d.status}</Pill></td><td className="mono num-cell">{d.coverage}</td><td className="mono num-cell">{d.assets || '—'}</td><td style={{ fontSize: 12, color: 'var(--text-3)' }}>{d.range}</td></tr>)}</tbody></table></div>
-        <div className="panel-note">当前研究上下文数据版本：<span className="mono">{researchContext.dataVersion}</span></div>
+        <div className="table-wrap">
+          <table className="data corr-table">
+            <thead><tr><th>Factor</th>{list.map((f) => <th key={f.id} className="num-cell">{f.id}</th>)}</tr></thead>
+            <tbody>
+              {list.map((f, i) => (
+                <tr key={f.id}><td className="mono">{f.id}</td>{list.map((g, j) => { const v = i === j ? 1 : Number((Math.sin((i + 1) * (j + 2)) * 0.4).toFixed(2)); return <td key={g.id} className="mono num-cell corr-cell" style={{ background: `color-mix(in oklch, var(--accent) ${Math.abs(v) * 55}%, transparent)` }}>{v.toFixed(2)}</td>; })}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Panel>
     </div>
   );
 }
 
-export function EnginePage({ kind = 'Miners' }: { kind?: string }) {
-  if (kind === 'Operators') return (
-    <div className="page"><PageHead eyebrow="Engine" title="Operators" description="搜索空间中可组合的算子分组。" />
-      <div className="card-grid">{operators.map((o) => <div className="mini-card" key={o}><h3>{o}</h3><p>算子分组</p></div>)}</div>
-    </div>
-  );
-  if (kind === 'Fitness') return <SimpleTable eyebrow="Engine" title="Fitness functions" desc="用于评估候选的目标函数。" cols={['Function', 'Definition']} rows={[['RankIC - λ·turnover', '排序相关性扣减换手惩罚'], ['IC', 'Pearson 相关'], ['ICIR', 'IC 均值 / IC 标准差']]} />;
+/* ============================ Portfolio / Backtest ============================ */
+
+export function Backtest({ kind }: { kind?: string }) {
+  const [running, setRunning] = useState(false);
+
+  if (kind === 'Portfolios') {
+    return (
+      <div className="page">
+        <PageHead eyebrow="Portfolio" title="Portfolios" description="由已晋升因子组合而成的投资组合。" actions={<button className="btn btn-primary"><Plus size={15} /> New portfolio</button>} />
+        <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Portfolio</th><th>Factors</th><th className="num-cell">Sharpe</th><th className="num-cell">Ann. return</th><th className="num-cell">Max DD</th><th>Status</th></tr></thead><tbody>
+          <tr><td className="cell-main">Crypto Alpha Blend</td><td className="mono">5 promoted</td><td className="mono num-cell strong">1.84</td><td className="mono num-cell pos">+38.2%</td><td className="mono num-cell neg">-12.4%</td><td><Pill>Active</Pill></td></tr>
+          <tr><td className="cell-main">Funding Reversal Only</td><td className="mono">2 promoted</td><td className="mono num-cell strong">1.32</td><td className="mono num-cell pos">+24.1%</td><td className="mono num-cell neg">-9.8%</td><td><Pill>Paused</Pill></td></tr>
+        </tbody></table></div></Panel>
+      </div>
+    );
+  }
+
+  if (kind === 'Risk') {
+    return (
+      <div className="page">
+        <PageHead eyebrow="Portfolio" title="Risk" description="组合层面的风险暴露与约束。" />
+        <div className="split">
+          <Panel><PanelHead eyebrow="Factor exposure" title="Active exposure vs limit ±5%" /><div className="panel-body"><DivergingBars items={[{ label: 'Momentum', value: 3.2 }, { label: 'Volatility', value: -2.1 }, { label: 'Liquidity', value: 1.4 }, { label: 'Funding', value: 4.6 }, { label: 'Size', value: -1.2 }]} valueFormat={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`} /></div></Panel>
+          <Panel><PanelHead eyebrow="Risk decomposition" title="Contribution to variance" /><div className="panel-body"><Gauge segments={[{ label: 'Idiosyncratic', value: 62, color: 'var(--accent)' }, { label: 'Factor', value: 28, color: 'var(--pos)' }, { label: 'Market', value: 10, color: 'var(--warn)' }]} /></div></Panel>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <PageHead eyebrow="Engine" title="Miners" description="因子搜索方法。不同 Miner 产生不同 Artifact。" />
+      <PageHead eyebrow="Portfolio" title="Backtests" description="用已晋升因子构建组合并回测。仅通过正式验证并人工晋升的因子可用于此。" actions={<button className="btn btn-primary" onClick={() => setRunning(true)}><Play size={15} /> Run backtest</button>} />
+      {!running ? (
+        <Panel><div className="panel-body"><Empty title="No backtest yet" text="选择已晋升因子并运行一次回测以查看净值、归因与成本。" action={<button className="btn btn-primary" onClick={() => setRunning(true)}><Play size={15} /> Run backtest</button>} /></div></Panel>
+      ) : (
+        <>
+          <Metrics items={[
+            { label: 'Ann. return', value: '+38.2%' }, { label: 'Sharpe', value: '1.84' },
+            { label: 'Max drawdown', value: '-12.4%' }, { label: 'Turnover', value: '18.3%' },
+          ]} />
+          <div className="split" style={{ marginTop: 16 }}>
+            <Panel><PanelHead eyebrow="Net value" title="Portfolio vs benchmark" aside={<span className="policy-chip">vs BTC Buy&amp;Hold</span>} /><div className="panel-body"><LineChart series={icSeries(3, 40).map((v, i) => 1 + i * 0.02 + v)} benchmark={icSeries(8, 40).map((v, i) => 1 + i * 0.012 + v * 0.5)} seriesLabel="Portfolio" benchmarkLabel="Benchmark" labels={Array.from({ length: 40 }, (_, i) => `M${i + 1}`)} valueFormat={(v) => v.toFixed(2)} /></div></Panel>
+            <Panel><PanelHead eyebrow="Cost structure" title="Execution cost breakdown" /><div className="panel-body"><Gauge segments={[{ label: 'Spread', value: 45, color: 'var(--accent)' }, { label: 'Impact', value: 32, color: 'var(--warn)' }, { label: 'Fees', value: 23, color: 'var(--pos)' }]} /></div></Panel>
+          </div>
+          <Panel><PanelHead eyebrow="Attribution" title="Return attribution" /><div className="panel-body"><Waterfall items={[{ label: 'Benchmark', value: 12, kind: 'base' }, { label: 'Selection', value: 14 }, { label: 'Timing', value: 8 }, { label: 'Cost', value: -4 }, { label: 'Portfolio', value: 30, kind: 'total' }]} /></div></Panel>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================ Data Center ============================ */
+
+export function DataCenter({ kind }: { kind: string }) {
+  const config: Record<string, { title: string; desc: string }> = {
+    Datasets: { title: 'Datasets', desc: '已连接的数据源及其覆盖率与时间范围。' },
+    Universes: { title: 'Universes', desc: '可选的标的池定义。' },
+    Features: { title: 'Features', desc: '特征分组，用于构成搜索空间。' },
+    Targets: { title: 'Targets', desc: '预测目标定义。' },
+  };
+  const c = config[kind];
+  return (
+    <div className="page">
+      <PageHead eyebrow="Data" title={c.title} description={c.desc} />
       <Panel>
-        <div className="table-wrap"><table className="data"><thead><tr><th>Miner</th><th>Code</th><th>Status</th><th>Artifact</th><th>Note</th></tr></thead><tbody>{miners.map((m) => <tr key={m.id}><td className="cell-main">{m.name}</td><td><span className="tag">{m.code}</span></td><td><Pill tone={m.status === 'Ready' ? 'success' : 'neutral'}>{m.status}</Pill></td><td className="mono" style={{ fontSize: 12 }}>{m.artifact}</td><td style={{ fontSize: 12, color: 'var(--text-3)' }}>{m.note}</td></tr>)}</tbody></table></div>
+        <div className="table-wrap">
+          {kind === 'Datasets' && <table className="data"><thead><tr><th>Dataset</th><th>Status</th><th className="num-cell">Coverage</th><th className="num-cell">Assets</th><th>Range</th></tr></thead><tbody>{datasets.map((d) => <tr key={d.name}><td className="cell-main">{d.name}</td><td><Pill>{d.status}</Pill></td><td className="mono num-cell">{d.coverage}</td><td className="mono num-cell">{d.assets}</td><td style={{ fontSize: 12 }}>{d.range}</td></tr>)}</tbody></table>}
+          {kind === 'Universes' && <table className="data"><thead><tr><th>Universe</th><th className="num-cell">Assets</th><th>Timeframe</th><th>Note</th></tr></thead><tbody>{universes.map((u) => <tr key={u.name}><td className="cell-main">{u.name}</td><td className="mono num-cell">{u.assets}</td><td className="mono">{u.timeframe}</td><td style={{ fontSize: 12 }}>{u.note}</td></tr>)}</tbody></table>}
+          {kind === 'Features' && <table className="data"><thead><tr><th>Feature group</th><th>Type</th></tr></thead><tbody>{featureGroups.map((f) => <tr key={f}><td className="cell-main">{f}</td><td><span className="tag">group</span></td></tr>)}</tbody></table>}
+          {kind === 'Targets' && <table className="data"><thead><tr><th>Target</th><th>Horizon</th><th>Note</th></tr></thead><tbody>{targets.map((t) => <tr key={t.name}><td className="cell-main">{t.name}</td><td className="mono">{t.horizon}</td><td style={{ fontSize: 12 }}>{t.note}</td></tr>)}</tbody></table>}
+        </div>
       </Panel>
     </div>
   );
 }
 
-function SimpleTable({ eyebrow, title, desc, cols, rows }: { eyebrow: string; title: string; desc: string; cols: string[]; rows: string[][] }) {
+/* ============================ Engine ============================ */
+
+export function EnginePage({ kind }: { kind: string }) {
+  if (kind === 'Miners') return <MinersView />;
+  const titles: Record<string, { title: string; desc: string }> = {
+    Operators: { title: 'Operators', desc: '搜索空间中可用的算子。' },
+    Fitness: { title: 'Fitness', desc: '搜索期使用的适应度函数。' },
+    Models: { title: 'Models', desc: '可供 LLM / NN Miner 使用的模型。' },
+  };
+  const c = titles[kind];
   return (
     <div className="page">
-      <PageHead eyebrow={eyebrow} title={title} description={desc} />
+      <PageHead eyebrow="Engine" title={c.title} description={c.desc} />
       <Panel>
-        <div className="table-wrap"><table className="data"><thead><tr>{cols.map((c) => <th key={c}>{c}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((cell, j) => <td key={j} className={j === 0 ? 'cell-main' : ''}>{cell}</td>)}</tr>)}</tbody></table></div>
+        <div className="table-wrap">
+          {kind === 'Operators' && <table className="data"><thead><tr><th>Operator group</th><th>Kind</th></tr></thead><tbody>{operators.map((o) => <tr key={o}><td className="cell-main">{o}</td><td><span className="tag">operator</span></td></tr>)}</tbody></table>}
+          {kind === 'Fitness' && <table className="data"><thead><tr><th>Fitness function</th><th>Note</th></tr></thead><tbody>{['RankIC - λ·turnover', 'IC', 'ICIR', 'Sharpe'].map((f) => <tr key={f}><td className="cell-main mono">{f}</td><td style={{ fontSize: 12 }}>搜索期综合适应度</td></tr>)}</tbody></table>}
+          {kind === 'Models' && <table className="data"><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody>{['gpt-4.1', 'gpt-4o', 'claude-3.7-sonnet', 'o3', 'deepseek-r1'].map((m) => <tr key={m}><td className="cell-main mono">{m}</td><td><span className="tag">gateway</span></td></tr>)}</tbody></table>}
+        </div>
       </Panel>
     </div>
   );
 }
+
+function MinersView() {
+  return (
+    <div className="page">
+      <PageHead eyebrow="Engine" title="Miners" description="Miner 列表由 Miner Registry 动态生成。新增 Miner 只需注册定义，即自动出现在此处与 New Experiment，无需修改导航或页面。" />
+      <Panel>
+        <div className="table-wrap">
+          <table className="data">
+            <thead><tr><th>Miner</th><th>Paradigm</th><th>Type</th><th>Capabilities</th><th>Version</th><th>Enabled</th><th className="num-cell">Recent runs</th></tr></thead>
+            <tbody>
+              {minerRegistry.map((m) => (
+                <tr key={m.id}>
+                  <td><span className="cell-main">{m.name}</span><span className="cell-sub mono">{m.id}</span></td>
+                  <td><span className="paradigm-tag">{paradigmLabels[m.paradigm]}</span></td>
+                  <td style={{ fontSize: 12 }}>{m.type}</td>
+                  <td><div className="cap-row">{m.capabilities.slice(0, 3).map((c) => <span key={c} className="cap-chip">{c}</span>)}{m.capabilities.length > 3 && <span className="cap-chip more">+{m.capabilities.length - 3}</span>}</div></td>
+                  <td className="mono" style={{ fontSize: 12 }}>{m.version}</td>
+                  <td>{m.enabled ? <Pill tone="success" noDot>Enabled</Pill> : <span className="pill pill-neutral no-dot">Disabled</span>}</td>
+                  <td className="mono num-cell">{m.recentRuns}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="panel-note">Quanta Alpha 是 LLM 范式下的一个自主多智能体 Miner 实现，而非独立范式；它与其它 Miner 共用同一研究流程。</div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ============================ Task Center (full page) ============================ */
+
+export function TasksPage() {
+  return (
+    <div className="page">
+      <PageHead eyebrow="Engine" title="Compute & Tasks" description="基础设施任务监控。Task 是计算任务，不承担研究 Provenance —— 研究记录以 Run 为准。" />
+      <Metrics items={[
+        { label: 'CPU', value: '62%' }, { label: 'GPU', value: '4 / 4' },
+        { label: 'Workers', value: '8' }, { label: 'Queue', value: '1' },
+      ]} />
+      <Panel>
+        <PanelHead eyebrow="Tasks" title="Infrastructure activity" />
+        <div className="table-wrap"><table className="data"><thead><tr><th>Task</th><th>Type</th><th>Detail</th><th>Progress</th><th>Status</th></tr></thead><tbody>
+          {[
+            { id: 'task-001', name: '候选因子搜索', type: 'Run', detail: 'RUN-184-03 · Quanta Alpha', status: '运行中', progress: 68 },
+            { id: 'task-002', name: '数据质量检查', type: 'Dataset', detail: 'Orderbook Features', status: '已完成', progress: 100 },
+            { id: 'task-003', name: 'OOS 指标计算', type: 'Validation', detail: 'VAL-002 · FAC-037', status: '排队中', progress: 0 },
+          ].map((t) => (
+            <tr key={t.id}><td className="cell-main">{t.name}</td><td><span className="tag">{t.type}</span></td><td style={{ fontSize: 12 }}>{t.detail}</td><td><div className="table-progress"><div className="progress thin"><span style={{ width: `${t.progress}%` }} /></div><small>{t.progress}%</small></div></td><td><Pill>{t.status}</Pill></td></tr>
+          ))}
+        </tbody></table></div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ============================ Reports / Settings / Help / NotFound ============================ */
 
 export function Reports() {
-  const [generated, setGenerated] = useState(false);
   return (
     <div className="page">
-      <PageHead eyebrow="Workspace" title="Research Reports" description="报告保留来源快照，并区分自动摘要与人工结论。" actions={<button className="btn btn-primary" onClick={() => setGenerated(true)}><Plus size={15} /> Generate report</button>} />
-      {generated && <div className="banner banner-ok" style={{ marginBottom: 16 }}><Check size={15} /> 报告已创建：Funding Reversal v3 验证报告</div>}
-      <div className="card-grid">
-        {reports.map((r) => (
-          <div className="mini-card" key={r.id}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><span className="tag">{r.type}</span><span style={{ fontSize: 11, color: 'var(--text-4)' }}>{r.updated}</span></div>
-            <h3>{r.title}</h3>
-            <p>来源快照：{r.source}</p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}><button className="btn btn-sm" onClick={() => window.print()}><Download size={13} /> Export</button><button className="btn btn-sm">Preview <ArrowRight size={13} /></button></div>
-          </div>
-        ))}
-      </div>
+      <PageHead eyebrow="Workspace" title="Reports" description="实验与验证生成的研究报告。" />
+      <Panel><div className="table-wrap"><table className="data"><thead><tr><th>Report</th><th>Type</th><th>Source</th><th>Updated</th></tr></thead><tbody>{reports.map((r) => <tr key={r.id}><td className="cell-main">{r.title}</td><td><span className="tag">{r.type}</span></td><td className="mono" style={{ fontSize: 12 }}>{r.source}</td><td style={{ fontSize: 12, color: 'var(--text-4)' }}>{r.updated}</td></tr>)}</tbody></table></div></Panel>
     </div>
   );
 }
 
 export function SettingsPage() {
-  const [saved, setSaved] = useState(false);
   return (
     <div className="page">
-      <PageHead eyebrow="Workspace" title="Settings" description="工作区默认上下文、显示偏好与引擎连接。" actions={saved ? <Pill tone="success">Saved</Pill> : undefined} />
-      <div className="grid-2">
-        <Panel>
-          <PanelHead eyebrow="Defaults" title="Default research context" />
-          <div className="panel-body">
-            <div className="field-grid">
-              <label className="field"><span>Universe</span><input defaultValue={researchContext.universe} /></label>
-              <label className="field"><span>Timeframe</span><input defaultValue={researchContext.frequency} /></label>
-              <label className="field"><span>Target</span><input defaultValue={researchContext.target} /></label>
-              <label className="field"><span>Timezone</span><select><option>UTC</option><option>Asia/Shanghai</option></select></label>
-            </div>
-            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setSaved(true)}>Save changes</button>
-          </div>
-        </Panel>
-        <Panel>
-          <PanelHead eyebrow="Engine" title="Compute connection" />
-          <div className="panel-body">
-            <div className="banner banner-warn" style={{ marginBottom: 14 }}>当前为 Demo 引擎，未连接真实计算后端。</div>
-            <dl className="kv"><dt>Adapter</dt><dd className="mono">local-demo</dd><dt>Status</dt><dd>Not configured</dd><dt>Data version</dt><dd className="mono">{researchContext.dataVersion}</dd></dl>
-          </div>
-        </Panel>
+      <PageHead eyebrow="Workspace" title="Settings" description="工作区、引擎与验证策略设置。" />
+      <div className="split">
+        <Panel><PanelHead eyebrow="Engine" title="Compute engine" /><div className="panel-body"><dl className="kv"><dt>Adapter</dt><dd>Demo (local deterministic)</dd><dt>Connection</dt><dd>Not configured</dd><dt>Data version</dt><dd className="mono">crypto-v3.2.1</dd></dl><button className="btn" style={{ marginTop: 12 }}>Configure engine</button></div></Panel>
+        <Panel><PanelHead eyebrow="Validation" title="Validation policies" /><div className="panel-body"><dl className="kv"><dt>Default</dt><dd>Standard Alpha Validation v3</dd><dt>Microstructure</dt><dd>Microstructure Validation v2</dd><dt>Equity</dt><dd>Equity Validation v1</dd></dl></div></Panel>
       </div>
     </div>
   );
@@ -747,42 +887,21 @@ export function SettingsPage() {
 export function Help() {
   return (
     <div className="page">
-      <PageHead eyebrow="Help" title="Research workflow guide" description="从研究想法到报告的最短路径。" />
-      <div className="card-grid">
-        {[['研究生命周期', 'Idea → Project → Experiment → Run → Candidate → Factor → Validation → Portfolio。'], ['Experiment vs Run', 'Experiment 是研究设计；Run 是一次可复现执行。Retry 创建新 Run。'], ['Candidate vs Factor', 'Candidate 是 Run 产出，Factor 是持久化研究资产。'], ['指标与上下文', '每个 IC / RankIC / OOS 都绑定 Dataset / Target / Period / Policy。'], ['快捷键', '⌘K 打开命令面板，快速跳转页面与操作。'], ['Demo 数据', '预览使用确定性演示数据；分析缺失时显示 Empty / Planned。']].map(([t, d]) => <div className="mini-card" key={t}><h3>{t}</h3><p>{d}</p></div>)}
-      </div>
+      <PageHead eyebrow="Help" title="Help & docs" description="FactorMiner 研究工作台使用说明。" />
+      <Panel><div className="panel-body"><dl className="kv">
+        <dt>核心流程</dt><dd>Project → New Experiment → Choose Miner → Run → Candidates → Persist Factors → Factor Library → Formal Validation → Promote → Portfolio</dd>
+        <dt>Miner 无关</dt><dd>核心页面不区分具体 Miner；差异通过 Schema / Artifact / Renderer 表达。</dd>
+        <dt>因子入库后</dt><dd>所有 Miner 的因子共用同一 Library / Inspector / Validation / Portfolio。</dd>
+      </dl></div></Panel>
     </div>
   );
 }
 
 export function NotFound() {
-  const location = useLocation();
   return (
     <div className="page">
-      <PageHead eyebrow="404" title="页面不存在" description="该地址没有对应的研究视图。可能是链接过期或路径拼写有误。" />
-      <Panel>
-        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'flex-start' }}>
-          <div className="banner banner-warn" style={{ margin: 0 }}><AlertTriangle size={15} /> 未找到路径 <span className="mono">{location.pathname}</span></div>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-3)' }}>从这里回到常用的研究入口：</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link className="btn btn-primary" to="/"><ArrowRight size={15} /> Research Overview</Link>
-            <Link className="btn" to="/library"><Target size={15} /> Factor Library</Link>
-            <Link className="btn" to="/validation"><Play size={15} /> Validation Center</Link>
-            <Link className="btn" to="/help"><Clipboard size={15} /> Workflow guide</Link>
-          </div>
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-export function TasksPage() {
-  return (
-    <div className="page">
-      <PageHead eyebrow="Engine" title="Compute / Tasks" description="后台计算任务。Task 是执行系统，与研究 Run 语义相关但不等同。" />
-      <Panel>
-        <div className="table-wrap"><table className="data"><thead><tr><th>Task</th><th>Type</th><th>Status</th><th>Progress</th></tr></thead><tbody>{tasks.map((t: any) => <tr key={t.id}><td className="cell-main">{t.name}<span className="cell-sub">{t.detail}</span></td><td><span className="tag">{t.type}</span></td><td><Pill>{t.status}</Pill></td><td><div className="table-progress"><div className="progress thin"><span style={{ width: `${t.progress}%` }} /></div><small>{t.progress}%</small></div></td></tr>)}</tbody></table></div>
-      </Panel>
+      <PageHead eyebrow="404" title="Page not found" description="该页面不存在或已迁移到新的信息架构。" />
+      <Panel><div className="panel-body"><Empty title="Nothing here" text="使用左侧导航或命令面板（⌘K）跳转。" action={<Link className="btn btn-primary" to="/"><Sparkles size={15} /> Back to Overview</Link>} /></div></Panel>
     </div>
   );
 }
