@@ -2,15 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
 import { Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest, DataCenter, Reports, SettingsPage, Help, TasksPage } from './pages/PlatformPages';
-import { useEffect } from 'react';
 import { I18nProvider } from './i18n';
 
 function App() {
-  // Force dark mode
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
   return (
     <I18nProvider>
       <BrowserRouter>
