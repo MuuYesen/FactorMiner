@@ -3,8 +3,8 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FileText, FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, PanelRight, Search, Settings2, Sparkles, TerminalSquare, Workflow, X } from 'lucide-react';
 
 const sections = [
-  { label: 'OVERVIEW', items: [{ name: 'Overview', path: '/', icon: Gauge }] },
-  { label: 'RESEARCH', items: [{ name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical }, { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Evolution', path: '/evolution', icon: GitBranch }] },
+  { label: 'WORKSPACE', items: [{ name: 'Overview', path: '/', icon: Gauge }, { name: 'Projects', path: '/projects', icon: Boxes }, { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Runs', path: '/runs', icon: Activity }] },
+  { label: 'RESEARCH', items: [{ name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical }, { name: 'Evolution', path: '/evolution', icon: GitBranch }] },
   { label: 'FACTORS', items: [{ name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare }, { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch }] },
   { label: 'VALIDATION', items: [{ name: 'IC Analysis', path: '/validation', icon: BarChart3 }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows }] },
   { label: 'DATA & ENGINE', items: [{ name: 'Datasets', path: '/data', icon: Database }, { name: 'Universe', path: '/data', icon: Boxes }, { name: 'Reports', path: '/reports', icon: FileText }, { name: 'Settings', path: '/settings', icon: Settings2 }] },

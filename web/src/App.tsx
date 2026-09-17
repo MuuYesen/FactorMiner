@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
 import { Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest, DataCenter, Reports, SettingsPage, Help, TasksPage } from './pages/PlatformPages';
+import { Projects, ProjectDetail, RunsPage, RunDetail } from './pages/WorkspacePages';
 import { I18nProvider } from './i18n';
 
 function App() {
@@ -11,6 +12,10 @@ function App() {
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Home />} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/:id" element={<ProjectDetail />} />
+            <Route path="runs" element={<RunsPage />} />
+            <Route path="runs/:id" element={<RunDetail />} />
             <Route path="launchpad" element={<MiningFlow />} />
             <Route path="mining" element={<MiningFlow />} />
             <Route path="idea" element={<Ideas />} />
