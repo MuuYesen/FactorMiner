@@ -23,20 +23,20 @@
   --line-2: #d3dbe2;
   --line-strong: #c2cdd6;
 
-  --accent: #0b7a8c;
-  --accent-hover: #086072;
-  --accent-soft: #e2f3f5;
-  --accent-line: #b6e0e5;
-  --accent-text: #075c69;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eaf1fe;
+  --accent-line: #c5d9fc;
+  --accent-text: #1d4ed8;
 
-  --pos: #1c8a63;
-  --pos-soft: #e6f4ee;
-  --neg: #c34a41;
-  --neg-soft: #fbeceb;
+  --pos: #17935f;
+  --pos-soft: #e6f5ee;
+  --neg: #d0453b;
+  --neg-soft: #fceceb;
   --warn: #a9720b;
   --warn-soft: #fbf1dc;
-  --info: #3a6ea8;
-  --info-soft: #e9f0f8;
+  --info: #2563eb;
+  --info-soft: #eaf1fe;
 
   --r: 6px;
   --r-sm: 4px;
@@ -275,11 +275,10 @@ table.data .cell-expr { display: block; font-family: var(--mono); font-size: 11p
    Metric strip
    ============================================================ */
 
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
-.metric { padding: 13px 16px; border-right: 1px solid var(--line); }
-.metric:last-child { border-right: 0; }
-.metric .m-label { font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-4); font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
-.metric .m-value { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.metric { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+.metric .m-label { font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-4); font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
+.metric .m-value { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 680; color: var(--text); letter-spacing: -0.02em; }
 .metric .m-sub { font-size: 11px; color: var(--text-4); margin-top: 3px; }
 
 /* Funnel */
@@ -441,6 +440,7 @@ table.data .cell-expr { display: block; font-family: var(--mono); font-size: 11p
 .banner-info { background: var(--accent-soft); color: var(--accent-text); }
 .banner-warn { background: var(--warn-soft); color: var(--warn); }
 .banner-ok { background: var(--pos-soft); color: var(--pos); }
+.banner-danger { background: var(--neg-soft); color: var(--neg); }
 
 /* ============================================================
    Responsive
