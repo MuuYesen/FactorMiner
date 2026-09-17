@@ -5,6 +5,9 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    allowedHosts: ['sb-4lybblvwasvm.vercel.run'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
