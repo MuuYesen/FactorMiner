@@ -6,7 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['sb-4lybblvwasvm.vercel.run'],
+    allowedHosts: ['.vercel.run'],
   },
   resolve: {
     alias: {
