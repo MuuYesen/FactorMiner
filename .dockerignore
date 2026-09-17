@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+.venv
+venv
+web
+data
+factor_db
+user_workspace/experiments

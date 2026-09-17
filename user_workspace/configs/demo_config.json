@@ -1,0 +1,39 @@
+{
+    "_comment_universe": "CRYPTO_PERP_TOP50 (Deprecated, using data_feeds.pairs)",
+    "population_size": 50,
+    "max_iterations": 100,
+    "target": {
+        "type": "forward_return",
+        "entry_price": "current_close",
+        "exit_price": "close",
+        "horizon_bars": 1,
+        "return_type": "simple"
+    },
+    "data_feeds": {
+        "required_streams": ["close", "volume"],
+        "exchange": "binance",
+        "instrument_type": "futures",
+        "timeframe": "5m",
+        "pairs": ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT"],
+        "mine_period": [["2024-01-01", "2024-06-01"]],
+        "test_period": [["2024-06-02", "2024-12-31"]],
+        "mining_mode": "sequential_single"
+    },
+    "search_space": {
+        "allowed_operators": ["add", "sub", "mul", "div", "ts_mean", "ts_std"]
+    },
+    "fitness": {
+        "hook": "my_bear_market_hunter"
+    },
+    "llm_api_config": {
+        "keys": ["mock_key_1"], 
+        "base_url": "https://api.openai.com/v1/chat/completions",
+        "model": "gpt-4",
+        "max_concurrency": 2,
+        "max_retries": 3,
+        "timeout_seconds": 60
+    },
+    "storage": {
+        "db_root": "factor_db"
+    }
+}
