@@ -50,8 +50,8 @@
   --header-h: 52px;
   --status-h: 30px;
 
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --sans: Inter, "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Microsoft YaHei", monospace;
+  --sans: "Geist", "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; border-color: var(--line); }
