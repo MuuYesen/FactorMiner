@@ -242,7 +242,7 @@ export function RunDetail() {
   const run = runs.find((r) => r.id === id) || runs[0];
   const experiment = experiments.find((e) => e.id === run.experimentId);
   const [tab, setTab] = useState('Overview');
-  const runCandidates = candidates.filter((c) => c.runId === run.id);
+  const runCandidates = candidates.filter((c: (typeof candidates)[number]) => c.runId === run.id);
   const tabs = ['Overview', 'Candidates', 'Factors', 'Logs', 'Config snapshot'];
 
   return (
@@ -307,7 +307,7 @@ export function RunDetail() {
             <table className="data">
               <thead><tr><th>Candidate</th><th>Expression</th><th className="num-cell">IC</th><th className="num-cell">RankIC</th><th className="num-cell">ICIR</th><th className="num-cell">Turnover</th><th>Outcome</th></tr></thead>
               <tbody>
-                {runCandidates.map((c) => (
+                {runCandidates.map((c: (typeof runCandidates)[number]) => (
                   <tr key={c.id}>
                     <td className="mono" style={{ fontSize: 12 }}>{c.id}</td>
                     <td className="mono" style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.expression}</td>
@@ -331,7 +331,7 @@ export function RunDetail() {
             <table className="data">
               <thead><tr><th>Factor</th><th>Lifecycle</th><th className="num-cell">IC</th></tr></thead>
               <tbody>
-                {runCandidates.filter((c) => c.kept).map((c) => (
+                {runCandidates.filter((c: (typeof runCandidates)[number]) => c.kept).map((c: (typeof runCandidates)[number]) => (
                   <tr key={c.id}><td><Link className="text-link mono" to={`/inspector?factor=${c.savedFactorId}`}>{c.savedFactorId}</Link></td><td><Pill>Reviewed</Pill></td><td className="mono num-cell">{c.ic.toFixed(3)}</td></tr>
                 ))}
               </tbody>
