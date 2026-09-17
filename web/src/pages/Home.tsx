@@ -1,16 +1,132 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ChevronRight, CircleAlert, Plus, Radar, ShieldCheck, Timer, TrendingUp, Workflow } from 'lucide-react';
-import { projects, experiments, researchActivity, runs } from '../data/researchData';
-
-const Metric = ({ label, value, note }: { label: string; value: string; note: string }) => <div className="workspace-metric"><span>{label}</span><b>{value}</b><small>{note}</small></div>;
-const Status = ({ children }: { children: string }) => <span className={`status-pill status-${children.toLowerCase()}`}>{children}</span>;
+import { ArrowUpRight, FlaskConical, Play, Plus, Sparkles } from 'lucide-react';
+import { experiments, projects, researchActivity, runs, workspaceStats } from '../data/researchData';
+import { PageHead, Panel, PanelHead, Pill, Metrics, Sparkline } from '../components/ui';
 
 export function Home() {
-  return <div className="overview-page">
-    <div className="page-heading"><div><div className="eyebrow"><Radar size={13}/> WORKSPACE / OVERVIEW</div><h1>Workspace Overview</h1><p>Factor research workspace activity, projects and reproducible runs.</p></div><div className="heading-actions"><button className="button-secondary"><Timer size={14}/> Last 7 days <ChevronRight size={13}/></button><Link to="/idea" className="button-primary"><Plus size={15}/> New research</Link></div></div>
-    <div className="workspace-metrics"><Metric label="Active Projects" value="2" note="of 3 projects"/><Metric label="Experiments" value="8" note="2 running"/><Metric label="Running Runs" value="3" note="18,420 candidates"/><Metric label="Total Factors" value="48" note="11 validated"/><Metric label="Promoted Factors" value="8" note="+2 this week"/></div>
-    <section className="panel table-panel"><div className="panel-heading"><div><span className="eyebrow">WORKSPACE / PROJECTS</span><h2>Active research projects</h2></div><Link to="/projects" className="text-link">View all <ArrowUpRight size={13}/></Link></div><div className="table-wrap"><table><thead><tr><th>Project</th><th>Research goal</th><th>Default dataset</th><th>Universe</th><th>Timeframe</th><th>Experiments</th><th>Runs</th><th>Factors</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id}><td><Link className="factor-link" to={`/projects/${project.id}`}>{project.name}</Link><span className="table-sub">{project.id}</span></td><td>{project.researchGoal}</td><td className="mono">{project.defaultDataset}</td><td className="mono">{project.defaultUniverse}</td><td className="mono">{project.defaultTimeframe}</td><td className="mono">{project.experiments}</td><td className="mono">{project.runs}</td><td className="mono">{project.factors} <small>({project.promoted} promoted)</small></td><td><Status>{project.status}</Status></td></tr>)}</tbody></table></div></section>
-    <div className="overview-grid top-grid"><section className="panel table-panel"><div className="panel-heading"><div><span className="eyebrow">RECENT EXPERIMENTS</span><h2>Research designs</h2></div><Link to="/experiments" className="text-link">Open experiments <ArrowUpRight size={13}/></Link></div><div className="table-wrap"><table><thead><tr><th>Experiment</th><th>Project</th><th>Miner</th><th>Latest run</th><th>Factors</th><th>Status</th></tr></thead><tbody>{experiments.map(experiment => <tr key={experiment.id}><td><Link className="factor-link" to={`/experiments/${experiment.id}`}>{experiment.name}</Link><span className="table-sub">{experiment.id}</span></td><td>Crypto Short-term Alpha</td><td className="mono">{experiment.miner}</td><td className="mono">{experiment.progress}%</td><td className="mono">{experiment.accepted}</td><td><Status>{experiment.latestRunStatus}</Status></td></tr>)}</tbody></table></div></section><section className="panel activity-panel"><div className="panel-heading"><div><span className="eyebrow">RUNNING RUNS</span><h2>Compute activity</h2></div><Link to="/runs" className="text-link">View all <ArrowUpRight size={13}/></Link></div><div className="experiment-list">{runs.filter(run => run.status === 'Running').map(run => <div className="experiment" key={run.id}><div className="experiment-top"><Link to={`/runs/${run.id}`}><b>{run.id}</b></Link><span className="mono">{run.progress}%</span></div><div className="progress-track"><span className="cyan" style={{ width: `${run.progress}%` }}/></div><div className="experiment-bottom"><span>{run.stage}</span><span>{run.compute}</span></div></div>)}</div><Link to="/tasks" className="panel-footer-link">Open task center <ChevronRight size={14}/></Link></section></div>
-    <section className="panel activity-feed"><div className="panel-heading"><div><span className="eyebrow">RECENT RESEARCH ACTIVITY</span><h2>Workspace timeline</h2></div><Workflow size={16} className="accent-icon"/></div>{researchActivity.map(([event, target, time]) => <div className="activity-row" key={`${event}-${target}`}><span className="activity-icon">{event === 'factor promoted' ? <ShieldCheck size={14}/> : event === 'run completed' ? <TrendingUp size={14}/> : <CircleAlert size={14}/>}</span><span><b>{event}</b><small>{target}</small></span><time>{time}</time></div>)}</section>
-  </div>;
+  const activeRuns = runs.filter((r) => r.status === 'Running' || r.status === 'Queued');
+  const recentExperiments = experiments.slice(0, 3);
+
+  return (
+    <div className="page">
+      <PageHead
+        eyebrow="Workspace"
+        title="Research Overview"
+        description="从研究想法到验证与组合的整体研究进展。所有指标均绑定明确的研究上下文。"
+        actions={
+          <>
+            <Link className="btn" to="/idea"><Sparkles size={15} /> New idea</Link>
+            <Link className="btn btn-primary" to="/mining"><Plus size={15} /> New experiment</Link>
+          </>
+        }
+      />
+
+      <Metrics
+        items={[
+          { label: 'Active projects', value: workspaceStats.activeProjects, sub: `共 ${workspaceStats.totalProjects} 个项目` },
+          { label: 'Running runs', value: workspaceStats.runningRuns, sub: '实时执行中' },
+          { label: 'Experiments', value: workspaceStats.experiments, sub: '全部研究设计' },
+          { label: 'Library factors', value: workspaceStats.libraryFactors, sub: `${workspaceStats.promotedFactors} 已晋升` },
+          { label: 'Pending validation', value: workspaceStats.pendingValidation, sub: '待决策' },
+        ]}
+      />
+
+      <div className="split" style={{ marginTop: 16 }}>
+        <div>
+          <Panel>
+            <PanelHead eyebrow="In progress" title="Active runs" aside={<Link className="text-link" to="/runs">All runs <ArrowUpRight size={13} /></Link>} />
+            {activeRuns.length === 0 ? (
+              <div style={{ padding: 16 }}><em style={{ color: 'var(--text-4)', fontSize: 13 }}>当前没有执行中的 Run。</em></div>
+            ) : (
+              <div className="table-wrap">
+                <table className="data">
+                  <thead><tr><th>Run</th><th>Experiment</th><th>Stage</th><th>Progress</th><th className="num-cell">Best IC</th></tr></thead>
+                  <tbody>
+                    {activeRuns.map((r) => (
+                      <tr key={r.id}>
+                        <td><Link className="cell-main text-link" to={`/runs/${r.id}`}>{r.id}</Link><span className="cell-sub mono">seed {r.seed} · {r.compute}</span></td>
+                        <td><Link className="text-link" to={`/experiments/${r.experimentId}`}>{r.experimentId}</Link></td>
+                        <td className="mono" style={{ fontSize: 12 }}>{r.stage}</td>
+                        <td><div className="table-progress"><div className="progress thin"><span style={{ width: `${r.progress}%` }} /></div><small>{r.progress}%</small></div></td>
+                        <td className="mono num-cell">{r.bestMetric}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+
+          <Panel>
+            <PanelHead eyebrow="Research designs" title="Recent experiments" aside={<Link className="text-link" to="/experiments">All experiments <ArrowUpRight size={13} /></Link>} />
+            <div className="table-wrap">
+              <table className="data">
+                <thead><tr><th>Experiment</th><th>Miner</th><th>Status</th><th className="num-cell">Runs</th><th className="num-cell">Candidates</th><th>Updated</th></tr></thead>
+                <tbody>
+                  {recentExperiments.map((e) => (
+                    <tr key={e.id}>
+                      <td><Link className="cell-main text-link" to={`/experiments/${e.id}`}>{e.name}</Link><span className="cell-sub">{e.researchQuestion}</span></td>
+                      <td><span className="tag">{e.miner}</span></td>
+                      <td><Pill>{e.status}</Pill></td>
+                      <td className="mono num-cell">{e.totalRuns}</td>
+                      <td className="mono num-cell">{e.candidates.toLocaleString()}</td>
+                      <td style={{ color: 'var(--text-4)', fontSize: 12 }}>{e.updated}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </div>
+
+        <div>
+          <Panel>
+            <PanelHead eyebrow="Projects" title="Research projects" />
+            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {projects.map((p) => (
+                <Link key={p.id} to={`/projects/${p.id}`} style={{ display: 'block', padding: 12, border: '1px solid var(--line)', borderRadius: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <b style={{ color: 'var(--text)', fontSize: 13 }}>{p.name}</b>
+                    <Pill>{p.status}</Pill>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>
+                    <span className="mono">{p.experiments} exp</span>
+                    <span className="mono">{p.factors} factors</span>
+                    <span className="mono">{p.promoted} promoted</span>
+                    <Sparkline series={[3, 5, 4, 7, 6, 9, 8, p.promoted + 4]} width={64} height={20} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHead eyebrow="Activity" title="Recent activity" />
+            <div className="panel-body">
+              <div className="timeline">
+                {researchActivity.map(([kind, subject, time]) => (
+                  <div className="tl-item" key={subject}>
+                    <span className={`tl-dot ${kind.includes('failed') ? 'fail' : kind.includes('promoted') || kind.includes('completed') ? 'done' : 'active'}`} />
+                    <div>
+                      <b style={{ fontSize: 12, textTransform: 'capitalize' }}>{kind}</b>
+                      <small>{subject} · {time}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Panel>
+
+          <Panel>
+            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link className="btn" to="/mining" style={{ justifyContent: 'flex-start' }}><FlaskConical size={15} /> Configure a mining experiment</Link>
+              <Link className="btn" to="/validation" style={{ justifyContent: 'flex-start' }}><Play size={15} /> Open Validation Center</Link>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
 }
+
+export default Home;

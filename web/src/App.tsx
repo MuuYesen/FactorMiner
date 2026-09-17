@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
-import { Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest, DataCenter, Reports, SettingsPage, Help, TasksPage } from './pages/PlatformPages';
+import {
+  Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest,
+  DataCenter, EnginePage, Reports, SettingsPage, Help, TasksPage,
+} from './pages/PlatformPages';
 import { Projects, ProjectDetail, RunsPage, RunDetail } from './pages/WorkspacePages';
 import { I18nProvider } from './i18n';
 
@@ -12,37 +15,61 @@ function App() {
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Home />} />
+
+            {/* Workspace */}
             <Route path="projects" element={<Projects />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
             <Route path="projects/:id/experiments" element={<Experiments />} />
             <Route path="projects/:id/runs" element={<RunsPage />} />
             <Route path="projects/:id/factors" element={<FactorLibrary />} />
             <Route path="projects/:id/validation" element={<Validation />} />
-            <Route path="runs" element={<RunsPage />} />
-            <Route path="runs/:id" element={<RunDetail />} />
-            <Route path="launchpad" element={<MiningFlow />} />
-            <Route path="mining" element={<MiningFlow />} />
-            <Route path="idea" element={<Ideas />} />
             <Route path="experiments" element={<Experiments />} />
             <Route path="experiments/:id" element={<ExperimentDetail />} />
-            <Route path="evolution" element={<Validation kind="演化追踪" />} />
+            <Route path="runs" element={<RunsPage />} />
+            <Route path="runs/:id" element={<RunDetail />} />
+
+            {/* Research */}
+            <Route path="idea" element={<Ideas />} />
+            <Route path="mining" element={<MiningFlow />} />
+            <Route path="launchpad" element={<MiningFlow />} />
+            <Route path="evolution" element={<InspectorPage />} />
+
+            {/* Factors */}
             <Route path="library" element={<FactorLibrary />} />
-            <Route path="inspector" element={<InspectorPage />} />
             <Route path="compare" element={<FactorLibrary />} />
-            <Route path="lineage" element={<Validation kind="因子血缘" />} />
-            <Route path="correlation" element={<Validation kind="相关性分析" />} />
+            <Route path="correlation" element={<Validation kind="Correlation" />} />
+            <Route path="lineage" element={<InspectorPage />} />
+            <Route path="inspector" element={<InspectorPage />} />
+
+            {/* Validation */}
             <Route path="validation" element={<Validation />} />
             <Route path="validation/ic" element={<Validation kind="IC Analysis" />} />
-            <Route path="stability" element={<Validation kind="稳定性" />} />
+            <Route path="stability" element={<Validation kind="Stability" />} />
             <Route path="regime" element={<Validation kind="Regime" />} />
             <Route path="walk-forward" element={<Validation kind="Walk Forward" />} />
             <Route path="overfit" element={<Validation kind="Overfit" />} />
+
+            {/* Portfolio */}
+            <Route path="combination" element={<Backtest />} />
+            <Route path="neutralization" element={<Backtest />} />
             <Route path="backtest" element={<Backtest />} />
-            <Route path="data" element={<DataCenter />} />
+
+            {/* Data */}
+            <Route path="data" element={<DataCenter kind="Datasets" />} />
+            <Route path="universes" element={<DataCenter kind="Universes" />} />
+            <Route path="features" element={<DataCenter kind="Features" />} />
+            <Route path="targets" element={<DataCenter kind="Targets" />} />
+
+            {/* Engine */}
+            <Route path="miners" element={<EnginePage kind="Miners" />} />
+            <Route path="operators" element={<EnginePage kind="Operators" />} />
+            <Route path="fitness" element={<EnginePage kind="Fitness" />} />
+            <Route path="tasks" element={<TasksPage />} />
+
+            {/* Misc */}
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<Help />} />
-            <Route path="tasks" element={<TasksPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
