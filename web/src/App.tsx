@@ -3,7 +3,7 @@ import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
 import {
   Ideas, Experiments, ExperimentDetail, MiningFlow, FactorLibrary, InspectorPage, Validation, Backtest,
-  DataCenter, EnginePage, Reports, SettingsPage, Help, TasksPage,
+  DataCenter, EnginePage, Reports, SettingsPage, Help, TasksPage, NotFound,
 } from './pages/PlatformPages';
 import { Projects, ProjectDetail, RunsPage, RunDetail } from './pages/WorkspacePages';
 import { I18nProvider } from './i18n';
@@ -70,6 +70,9 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<Help />} />
+
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

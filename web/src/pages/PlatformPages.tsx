@@ -125,7 +125,7 @@ export function Experiments() {
       <div className="page">
         <div className="scope-head">
           <div className="eyebrow">Project · {project.id}</div>
-          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内的研究设计。</p></div><Link className="btn btn-primary" to="/mining"><Plus size={15} /> New experiment</Link></div>
+          <div className="scope-top"><div><h1>{project.name}</h1><p className="scope-desc">项目范围内���研究设计。</p></div><Link className="btn btn-primary" to="/mining"><Plus size={15} /> New experiment</Link></div>
           <div className="tabs">{[['Overview', `/projects/${project.id}`], ['Experiments', `/projects/${project.id}/experiments`], ['Runs', `/projects/${project.id}/runs`], ['Factors', `/projects/${project.id}/factors`], ['Validation', `/projects/${project.id}/validation`]].map(([l, t]) => <Link key={l} to={t} className={l === 'Experiments' ? 'active' : ''}>{l}</Link>)}</div>
         </div>
         <div className="toolbar"><div className="search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索实验" /></div></div>
@@ -751,6 +751,27 @@ export function Help() {
       <div className="card-grid">
         {[['研究生命周期', 'Idea → Project → Experiment → Run → Candidate → Factor → Validation → Portfolio。'], ['Experiment vs Run', 'Experiment 是研究设计；Run 是一次可复现执行。Retry 创建新 Run。'], ['Candidate vs Factor', 'Candidate 是 Run 产出，Factor 是持久化研究资产。'], ['指标与上下文', '每个 IC / RankIC / OOS 都绑定 Dataset / Target / Period / Policy。'], ['快捷键', '⌘K 打开命令面板，快速跳转页面与操作。'], ['Demo 数据', '预览使用确定性演示数据；分析缺失时显示 Empty / Planned。']].map(([t, d]) => <div className="mini-card" key={t}><h3>{t}</h3><p>{d}</p></div>)}
       </div>
+    </div>
+  );
+}
+
+export function NotFound() {
+  const location = useLocation();
+  return (
+    <div className="page">
+      <PageHead eyebrow="404" title="页面不存在" description="该地址没有对应的研究视图。可能是链接过期或路径拼写有误。" />
+      <Panel>
+        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'flex-start' }}>
+          <div className="banner banner-warn" style={{ margin: 0 }}><AlertTriangle size={15} /> 未找到路径 <span className="mono">{location.pathname}</span></div>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-3)' }}>从这里回到常用的研究入口：</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link className="btn btn-primary" to="/"><ArrowRight size={15} /> Research Overview</Link>
+            <Link className="btn" to="/library"><Target size={15} /> Factor Library</Link>
+            <Link className="btn" to="/validation"><Play size={15} /> Validation Center</Link>
+            <Link className="btn" to="/help"><Clipboard size={15} /> Workflow guide</Link>
+          </div>
+        </div>
+      </Panel>
     </div>
   );
 }
