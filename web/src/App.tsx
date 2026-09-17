@@ -14,6 +14,10 @@ function App() {
             <Route index element={<Home />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
+            <Route path="projects/:id/experiments" element={<Experiments />} />
+            <Route path="projects/:id/runs" element={<RunsPage />} />
+            <Route path="projects/:id/factors" element={<FactorLibrary />} />
+            <Route path="projects/:id/validation" element={<Validation />} />
             <Route path="runs" element={<RunsPage />} />
             <Route path="runs/:id" element={<RunDetail />} />
             <Route path="launchpad" element={<MiningFlow />} />
@@ -26,8 +30,13 @@ function App() {
             <Route path="inspector" element={<InspectorPage />} />
             <Route path="compare" element={<FactorLibrary />} />
             <Route path="lineage" element={<Validation kind="因子血缘" />} />
+            <Route path="correlation" element={<Validation kind="相关性分析" />} />
             <Route path="validation" element={<Validation />} />
+            <Route path="validation/ic" element={<Validation kind="IC Analysis" />} />
             <Route path="stability" element={<Validation kind="稳定性" />} />
+            <Route path="regime" element={<Validation kind="Regime" />} />
+            <Route path="walk-forward" element={<Validation kind="Walk Forward" />} />
+            <Route path="overfit" element={<Validation kind="Overfit" />} />
             <Route path="backtest" element={<Backtest />} />
             <Route path="data" element={<DataCenter />} />
             <Route path="reports" element={<Reports />} />

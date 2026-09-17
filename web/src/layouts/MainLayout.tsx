@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FileText, FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, Search, Settings2, Sparkles, TerminalSquare, Workflow, X } from 'lucide-react';
+import { Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, Search, Settings2, Sparkles, Workflow, X } from 'lucide-react';
 
 const sections = [
   { label: 'WORKSPACE', items: [{ name: 'Overview', path: '/', icon: Gauge }, { name: 'Projects', path: '/projects', icon: Boxes }, { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Runs', path: '/runs', icon: Activity }] },
   { label: 'RESEARCH', items: [{ name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical }, { name: 'Evolution', path: '/evolution', icon: GitBranch }] },
-  { label: 'FACTORS', items: [{ name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare }, { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch }] },
-  { label: 'VALIDATION', items: [{ name: 'IC Analysis', path: '/validation', icon: BarChart3 }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows }] },
-  { label: 'DATA & ENGINE', items: [{ name: 'Datasets', path: '/data', icon: Database }, { name: 'Universe', path: '/data', icon: Boxes }, { name: 'Reports', path: '/reports', icon: FileText }, { name: 'Settings', path: '/settings', icon: Settings2 }] },
+  { label: 'FACTORS', items: [{ name: 'Library', path: '/library', icon: Layers3 }, { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Correlation', path: '/correlation', icon: BarChart3 }, { name: 'Lineage', path: '/lineage', icon: GitBranch }] },
+  { label: 'VALIDATION', items: [{ name: 'Validation Center', path: '/validation', icon: BarChart3 }, { name: 'IC Analysis', path: '/validation/ic', icon: Activity }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Regime', path: '/regime', icon: Activity }, { name: 'Walk Forward', path: '/walk-forward', icon: GitCompareArrows }, { name: 'Overfit', path: '/overfit', icon: GitCompareArrows }] },
+  { label: 'PORTFOLIO', items: [{ name: 'Combination', path: '/combination', icon: GitCompareArrows }, { name: 'Neutralization', path: '/neutralization', icon: GitCompareArrows }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows }] },
+  { label: 'DATA', items: [{ name: 'Datasets', path: '/data', icon: Database }, { name: 'Universes', path: '/data', icon: Boxes }, { name: 'Features', path: '/data', icon: Database }, { name: 'Targets', path: '/data', icon: Database }] },
+  { label: 'ENGINE', items: [{ name: 'Miners', path: '/launchpad', icon: FlaskConical }, { name: 'Operators', path: '/settings', icon: Settings2 }, { name: 'Fitness', path: '/settings', icon: Gauge }, { name: 'Models', path: '/settings', icon: Boxes }, { name: 'Compute', path: '/tasks', icon: Activity }] },
 ];
 const paletteItems = [{ label: '研究想法', path: '/idea' }, { label: 'Mining Experiment', path: '/launchpad' }, { label: '实验管理', path: '/experiments' }, { label: '因子库', path: '/library' }, { label: '研究报告', path: '/reports' }, { label: '工作台设置', path: '/settings' }];
 
