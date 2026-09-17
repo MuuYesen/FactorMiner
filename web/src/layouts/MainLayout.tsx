@@ -14,7 +14,7 @@ const sections = [
     { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Evolution', path: '/evolution', icon: GitBranch },
   ] },
   { label: 'FACTORS', items: [
-    { name: 'Library', path: '/inspector', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare },
+    { name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare },
     { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch },
   ] },
   { label: 'VALIDATION', items: [
