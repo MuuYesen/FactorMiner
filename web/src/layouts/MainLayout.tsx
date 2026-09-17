@@ -1,78 +1,37 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import {
-  Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FileText,
-  FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, PanelRight,
-  Search, Settings2, Sparkles, TerminalSquare, Workflow, X,
-} from 'lucide-react';
-import { useI18n } from '../i18n';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FileText, FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, PanelRight, Search, Settings2, Sparkles, TerminalSquare, Workflow, X } from 'lucide-react';
 
 const sections = [
   { label: 'OVERVIEW', items: [{ name: 'Overview', path: '/', icon: Gauge }] },
-  { label: 'RESEARCH', items: [
-    { name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical },
-    { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Evolution', path: '/evolution', icon: GitBranch },
-  ] },
-  { label: 'FACTORS', items: [
-    { name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare },
-    { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch },
-  ] },
-  { label: 'VALIDATION', items: [
-    { name: 'IC Analysis', path: '/validation', icon: BarChart3 }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows },
-  ] },
-  { label: 'DATA & ENGINE', items: [
-    { name: 'Datasets', path: '/data', icon: Database }, { name: 'Universe', path: '/data', icon: Boxes }, { name: 'Reports', path: '/reports', icon: FileText }, { name: 'Settings', path: '/settings', icon: Settings2 },
-  ] },
+  { label: 'RESEARCH', items: [{ name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical }, { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Evolution', path: '/evolution', icon: GitBranch }] },
+  { label: 'FACTORS', items: [{ name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare }, { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch }] },
+  { label: 'VALIDATION', items: [{ name: 'IC Analysis', path: '/validation', icon: BarChart3 }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows }] },
+  { label: 'DATA & ENGINE', items: [{ name: 'Datasets', path: '/data', icon: Database }, { name: 'Universe', path: '/data', icon: Boxes }, { name: 'Reports', path: '/reports', icon: FileText }, { name: 'Settings', path: '/settings', icon: Settings2 }] },
 ];
+const paletteItems = [{ label: '研究想法', path: '/idea' }, { label: 'Mining Experiment', path: '/launchpad' }, { label: '实验管理', path: '/experiments' }, { label: '因子库', path: '/library' }, { label: '研究报告', path: '/reports' }, { label: '工作台设置', path: '/settings' }];
 
 export function MainLayout() {
-  const location = useLocation();
-  const { language, setLanguage } = useI18n();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [tasksOpen, setTasksOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const toggle = (label: string) => setCollapsed((current) => ({ ...current, [label]: !current[label] }));
-
-  return (
-    <div className="research-shell">
-      <header className="top-context-bar">
-        <Link to="/" className="brand-mark"><span className="brand-glyph">ƒ</span><span>FactorMiner <b>V4</b></span></Link>
-        <div className="context-divider" />
-        <div className="research-context"><span className="context-label">RESEARCH CONTEXT</span><span>Crypto Top50</span><i /> <span>1H</span><i /> <span>Target +4H</span><i /> <span>Data v2026.09</span><i /> <span>OOS 2026</span><i /> <span>Cost 5bps</span></div>
-        <div className="top-actions">
-          <button className="icon-button" onClick={() => setPaletteOpen(true)} aria-label="Open command palette"><Search size={15} /><kbd>⌘ K</kbd></button>
-          <span className="engine-status"><span className="status-dot" /> Demo engine</span>
-          <select value={language} onChange={(event) => setLanguage(event.target.value as typeof language)} aria-label="Language"><option value="zh">中</option><option value="en">EN</option></select>
-          <button className="icon-button" aria-label="Settings"><Settings2 size={16} /></button>
-        </div>
-      </header>
-
-      <div className="workstation-body">
-        <aside className="sidebar">
-          <div className="sidebar-head"><span>WORKSPACE</span><button className="icon-button" aria-label="Collapse sidebar"><Menu size={15} /></button></div>
-          <div className="sidebar-scroll">
-            {sections.map((section) => <div className="nav-section" key={section.label}>
-              <button className="section-label" onClick={() => toggle(section.label)}>{section.label}<ChevronDown size={12} className={collapsed[section.label] ? 'rotate-[-90deg]' : ''} /></button>
-              {!collapsed[section.label] && section.items.map((item) => {
-                const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-                const Icon = item.icon;
-                return <Link key={`${section.label}-${item.name}`} to={item.path} className={`nav-item ${active ? 'active' : ''}`}><Icon size={15} />{item.name}{item.name === 'Mining' && <span className="nav-badge">3</span>}</Link>;
-              })}
-            </div>)}
-          </div>
-          <div className="sidebar-bottom"><Link to="/help" className="nav-item"><CircleHelp size={15} />帮助文档</Link><div className="user-row"><span className="avatar">MR</span><span><b>Market Research</b><small>Local workspace</small></span><ChevronRight size={14} /></div></div>
-        </aside>
-
-        <main className="workspace"><Outlet /></main>
-        <aside className="right-rail"><div className="rail-header"><span>CONTEXT</span><PanelRight size={14} /></div><div className="rail-block"><span className="rail-kicker">ACTIVE DATASET</span><b>Crypto_Perpetual_1H_v12</b><span>83 assets · 17 features</span></div><div className="rail-block"><span className="rail-kicker">CURRENT TARGET</span><b>Forward Return +4H</b><span>Cross-sectional · cost adjusted</span></div><div className="rail-block"><span className="rail-kicker">RESEARCH SESSION</span><div className="session-line"><span className="status-dot" />Session synced</div><span>Last saved 2 minutes ago</span></div><button className="rail-link">Open session details <ChevronRight size={13} /></button></aside>
-      </div>
-
-      <button className="task-status-bar" onClick={() => setTasksOpen(true)}><span className="task-pulse" /><b>3 Running</b><span>18,420 Candidates</span><span>47 Accepted</span><span>Demo tasks</span><span className="task-open">Open Task Center <ChevronRight size={13} /></span></button>
-
-      {tasksOpen && <div className="drawer-backdrop" onClick={() => setTasksOpen(false)}><section className="task-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-title"><div><span className="rail-kicker">TASK CENTER</span><h2>Compute activity</h2></div><button className="icon-button" onClick={() => setTasksOpen(false)} aria-label="Close task center"><X size={16} /></button></div>{[['GP Mining #184',78,'Generation 31 / 40','Best fitness .083'],['LLM Mining #185',54,'Candidate 81 / 150','Best OOS IC .054'],['Dataset Update',100,'Coverage validation','Completed']].map(([name, progress, detail, note]) => <div className="task-card" key={name as string}><div className="task-card-head"><b>{name as string}</b><span>{progress as number}%</span></div><div className="progress-track"><span style={{ width: `${progress}%` }} /></div><div className="task-meta"><span>{detail as string}</span><span>{note as string}</span></div></div>)}</section></div>}
-      {paletteOpen && <div className="drawer-backdrop" onClick={() => setPaletteOpen(false)}><section className="command-palette" onClick={(event) => event.stopPropagation()}><div className="command-input"><Search size={17} /><input autoFocus placeholder="Search factors, experiments, commands..." /><kbd>ESC</kbd></div><div className="command-list"><span className="rail-kicker">QUICK ACTIONS</span>{['Search Factor','Launch Mining','Open Experiment','Compare Factors','Run Walk Forward','Open Dataset'].map((command, index) => <button key={command} onClick={() => setPaletteOpen(false)}><span className="command-key">{index + 1}</span>{command}<kbd>↵</kbd></button>)}</div></section></div>}
-    </div>
-  );
+  const location = useLocation(); const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({}); const [tasksOpen, setTasksOpen] = useState(false); const [paletteOpen, setPaletteOpen] = useState(false); const [engineOpen, setEngineOpen] = useState(false); const [preferencesOpen, setPreferencesOpen] = useState(false); const [contextOpen, setContextOpen] = useState<string | null>(null); const [query, setQuery] = useState(''); const [paletteIndex, setPaletteIndex] = useState(0); const [density, setDensity] = useState(() => localStorage.getItem('factorminer-density') || 'comfortable');
+  const toggle = (label: string) => setCollapsed(current => ({ ...current, [label]: !current[label] }));
+  const results = useMemo(() => paletteItems.filter(item => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
+  useEffect(() => { localStorage.setItem('factorminer-density', density); document.documentElement.dataset.density = density; }, [density]);
+  useEffect(() => { const onKey = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen(true); } if (event.key === 'Escape') { setPaletteOpen(false); setEngineOpen(false); setPreferencesOpen(false); setContextOpen(null); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
+  useEffect(() => { if (!paletteOpen) return; const onKey = (event: KeyboardEvent) => { if (event.key === 'ArrowDown') { event.preventDefault(); setPaletteIndex(index => Math.min(index + 1, Math.max(results.length - 1, 0))); } if (event.key === 'ArrowUp') { event.preventDefault(); setPaletteIndex(index => Math.max(index - 1, 0)); } if (event.key === 'Enter' && results[paletteIndex]) { navigate(results[paletteIndex].path); setPaletteOpen(false); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [paletteOpen, paletteIndex, results, navigate]);
+  const openPalette = () => { setQuery(''); setPaletteIndex(0); setPaletteOpen(true); };
+  const selectContext = () => { setContextOpen(null); };
+  return <div className="research-shell">
+    <header className="top-context-bar">
+      <Link to="/" className="brand-mark"><span className="brand-glyph">ƒ</span><span>FactorMiner <b>V4</b></span></Link><div className="context-divider" />
+      <div className="research-context"><span className="context-label">RESEARCH CONTEXT</span>{[['Universe','Crypto Top50'],['频率','1H'],['预测周期','Target +4H']].map(([key,value]) => <div className="context-control" key={key}><button onClick={() => setContextOpen(contextOpen === key ? null : key)} aria-label={`选择${key}`}>{value}<ChevronDown size={11}/></button>{contextOpen === key && <div className="context-popover"><b>{key}</b>{['当前选项','自定义','应用到新研究'].map(option => <button key={option} onClick={selectContext}>{option}</button>)}<small>历史实验保留原始配置快照</small></div>}</div>)}<i /><span>Data v2026.09</span><i /><span>OOS 2026</span><i /><span>Cost 5bps</span></div>
+      <div className="top-actions"><button className="icon-button" onClick={openPalette} aria-label="打开全局搜索"><Search size={15}/><kbd>⌘ K</kbd></button><div className="engine-control"><button className="engine-status" onClick={() => setEngineOpen(!engineOpen)} aria-expanded={engineOpen}><span className="status-dot demo-dot"/> Demo engine <ChevronDown size={11}/></button>{engineOpen && <div className="engine-popover"><b>Demo engine</b><p>当前为本地演示适配器，没有真实计算引擎连接。</p><span>最近检查：刚刚</span><span>连接状态：未配置</span><div><Link to="/settings" onClick={() => setEngineOpen(false)}>查看连接设置</Link><button onClick={() => setEngineOpen(false)}>重新检查</button></div></div>}</div><button className="icon-button" onClick={() => setPreferencesOpen(true)} aria-label="打开工作台偏好" title="工作台偏好"><Settings2 size={16}/></button></div>
+    </header>
+    <div className="workstation-body"><aside className="sidebar"><div className="sidebar-head"><span>WORKSPACE</span><button className="icon-button" aria-label="折叠侧栏"><Menu size={15}/></button></div><div className="sidebar-scroll">{sections.map(section => <div className="nav-section" key={section.label}><button className="section-label" onClick={() => toggle(section.label)}>{section.label}<ChevronDown size={12} className={collapsed[section.label] ? 'rotate-[-90deg]' : ''}/></button>{!collapsed[section.label] && section.items.map(item => { const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)); const Icon = item.icon; return <Link key={`${section.label}-${item.name}`} to={item.path} className={`nav-item ${active ? 'active' : ''}`}><Icon size={15}/>{item.name}{item.name === 'Mining' && <span className="nav-badge">3</span>}</Link>; })}</div>)}</div><div className="sidebar-bottom"><Link to="/help" className="nav-item"><CircleHelp size={15}/>帮助文档</Link><div className="user-row"><span className="avatar">MR</span><span><b>Market Research</b><small>Local workspace</small></span><ChevronRight size={14}/></div></div></aside><main className={`workspace density-${density}`}><Outlet/></main><aside className="right-rail"><div className="rail-header"><span>CONTEXT</span><PanelRight size={14}/></div><div className="rail-block"><span className="rail-kicker">ACTIVE DATASET</span><b>Crypto_Perpetual_1H_v12</b><span>83 assets · 17 features</span></div><div className="rail-block"><span className="rail-kicker">CURRENT TARGET</span><b>Forward Return +4H</b><span>Cross-sectional · cost adjusted</span></div><div className="rail-block"><span className="rail-kicker">RESEARCH SESSION</span><div className="session-line"><span className="status-dot demo-dot"/>Demo session</div><span>Local preview state</span></div><Link to="/settings" className="rail-link">Open session details <ChevronRight size={13}/></Link></aside></div>
+    <button className="task-status-bar" onClick={() => setTasksOpen(true)} aria-label="打开任务中心"><span className="task-pulse"/><b>2 Demo tasks</b><span>18,420 Candidates</span><span>47 Accepted</span><span>Local queue</span><span className="task-open">Open Task Center <ChevronRight size={13}/></span></button>
+    {tasksOpen && <div className="drawer-backdrop" onClick={() => setTasksOpen(false)}><section className="task-drawer" onClick={event => event.stopPropagation()}><div className="drawer-title"><div><span className="rail-kicker">TASK CENTER</span><h2>Compute activity</h2></div><button className="icon-button" onClick={() => setTasksOpen(false)} aria-label="关闭任务中心"><X size={16}/></button></div>{[['GP Mining #184',78,'Generation 31 / 40','Best fitness .083'],['LLM Mining #185',54,'Candidate 81 / 150','Best OOS IC .054']].map(([name,progress,detail,note]) => <div className="task-card" key={name as string}><div className="task-card-head"><Link to="/experiments/exp-184" onClick={() => setTasksOpen(false)}><b>{name as string}</b></Link><span>{progress as number}%</span></div><div className="progress-track"><span style={{width:`${progress}%`}}/></div><div className="task-meta"><span>{detail as string}</span><span>{note as string}</span></div><button className="task-action" onClick={() => setTasksOpen(false)}>取消 Demo 任务</button></div>)}</section></div>}
+    {paletteOpen && <div className="drawer-backdrop" onClick={() => setPaletteOpen(false)}><section className="command-palette" onClick={event => event.stopPropagation()}><div className="command-input"><Search size={17}/><input autoFocus value={query} onChange={event => { setQuery(event.target.value); setPaletteIndex(0); }} placeholder="搜索页面、实验、因子或报告"/><kbd>ESC</kbd></div><div className="command-list"><span className="rail-kicker">{query ? 'SEARCH RESULTS' : '常用操作'}</span>{results.length ? results.map((item,index) => <button className={index === paletteIndex ? 'selected' : ''} key={item.path} onClick={() => { navigate(item.path); setPaletteOpen(false); }}><span className="command-key">{index + 1}</span>{item.label}<kbd>↵</kbd></button>) : <div className="command-empty">没有找到匹配页面或对象</div>}</div></section></div>}
+    {preferencesOpen && <div className="drawer-backdrop" onClick={() => setPreferencesOpen(false)}><section className="preference-drawer" onClick={event => event.stopPropagation()}><div className="drawer-title"><div><span className="rail-kicker">WORKSPACE PREFERENCES</span><h2>工作台偏好</h2></div><button className="icon-button" onClick={() => setPreferencesOpen(false)} aria-label="关闭工作台偏好"><X size={16}/></button></div><label className="preference-row"><span>表格密度<small>影响研究列表与结果表</small></span><select value={density} onChange={event => setDensity(event.target.value)}><option value="comfortable">舒适</option><option value="compact">紧凑</option></select></label><Link to="/settings" className="button-primary" onClick={() => setPreferencesOpen(false)}>进入完整设置</Link></section></div>}
+  </div>;
 }
-
 export default MainLayout;
