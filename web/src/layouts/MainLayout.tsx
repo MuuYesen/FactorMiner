@@ -1,37 +1,257 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FileText, FlaskConical, Gauge, GitBranch, GitCompareArrows, Layers3, Menu, PanelRight, Search, Settings2, Sparkles, TerminalSquare, Workflow, X } from 'lucide-react';
+import {
+  Activity, BarChart3, Boxes, ChevronDown, ChevronRight, CircleHelp, Database, FlaskConical, GitBranch,
+  GitCompareArrows, Gauge, Layers3, LayoutGrid, LineChart, Network, Search, Settings2, Shuffle, Sparkles,
+  SlidersHorizontal, Target, TerminalSquare, TestTubes, Workflow, X, Cpu,
+} from 'lucide-react';
+import { tasks } from '../data/researchData';
 
 const sections = [
-  { label: 'OVERVIEW', items: [{ name: 'Overview', path: '/', icon: Gauge }] },
-  { label: 'RESEARCH', items: [{ name: 'Research Idea', path: '/idea', icon: Sparkles }, { name: 'Mining', path: '/launchpad', icon: FlaskConical }, { name: 'Experiments', path: '/experiments', icon: Workflow }, { name: 'Evolution', path: '/evolution', icon: GitBranch }] },
-  { label: 'FACTORS', items: [{ name: 'Library', path: '/library', icon: Layers3 }, { name: 'Inspector', path: '/inspector', icon: TerminalSquare }, { name: 'Compare', path: '/compare', icon: GitCompareArrows }, { name: 'Lineage', path: '/lineage', icon: GitBranch }] },
-  { label: 'VALIDATION', items: [{ name: 'IC Analysis', path: '/validation', icon: BarChart3 }, { name: 'Stability', path: '/stability', icon: Activity }, { name: 'Backtest', path: '/backtest', icon: GitCompareArrows }] },
-  { label: 'DATA & ENGINE', items: [{ name: 'Datasets', path: '/data', icon: Database }, { name: 'Universe', path: '/data', icon: Boxes }, { name: 'Reports', path: '/reports', icon: FileText }, { name: 'Settings', path: '/settings', icon: Settings2 }] },
+  { label: 'Workspace', items: [
+    { name: 'Overview', path: '/', icon: LayoutGrid },
+    { name: 'Projects', path: '/projects', icon: Boxes },
+    { name: 'Experiments', path: '/experiments', icon: Workflow },
+    { name: 'Runs', path: '/runs', icon: Activity },
+  ] },
+  { label: 'Research', items: [
+    { name: 'Research Idea', path: '/idea', icon: Sparkles },
+    { name: 'Mining', path: '/mining', icon: FlaskConical, count: 3 },
+    { name: 'Evolution', path: '/evolution', icon: GitBranch },
+  ] },
+  { label: 'Factors', items: [
+    { name: 'Library', path: '/library', icon: Layers3 },
+    { name: 'Compare', path: '/compare', icon: GitCompareArrows },
+    { name: 'Correlation', path: '/correlation', icon: Network },
+    { name: 'Lineage', path: '/lineage', icon: GitBranch },
+  ] },
+  { label: 'Validation', items: [
+    { name: 'Validation Center', path: '/validation', icon: TestTubes },
+    { name: 'IC Analysis', path: '/validation/ic', icon: LineChart },
+    { name: 'Stability', path: '/stability', icon: Activity },
+    { name: 'Regime', path: '/regime', icon: BarChart3 },
+    { name: 'Walk Forward', path: '/walk-forward', icon: GitCompareArrows },
+    { name: 'Overfit', path: '/overfit', icon: SlidersHorizontal },
+  ] },
+  { label: 'Portfolio', items: [
+    { name: 'Combination', path: '/combination', icon: Shuffle },
+    { name: 'Neutralization', path: '/neutralization', icon: SlidersHorizontal },
+    { name: 'Backtest', path: '/backtest', icon: LineChart },
+  ] },
+  { label: 'Data', items: [
+    { name: 'Datasets', path: '/data', icon: Database },
+    { name: 'Universes', path: '/universes', icon: Boxes },
+    { name: 'Features', path: '/features', icon: Layers3 },
+    { name: 'Targets', path: '/targets', icon: Target },
+  ] },
+  { label: 'Engine', items: [
+    { name: 'Miners', path: '/miners', icon: FlaskConical },
+    { name: 'Operators', path: '/operators', icon: Settings2 },
+    { name: 'Fitness', path: '/fitness', icon: Gauge },
+    { name: 'Compute / Tasks', path: '/tasks', icon: Cpu },
+  ] },
 ];
-const paletteItems = [{ label: '研究想法', path: '/idea' }, { label: 'Mining Experiment', path: '/launchpad' }, { label: '实验管理', path: '/experiments' }, { label: '因子库', path: '/library' }, { label: '研究报告', path: '/reports' }, { label: '工作台设置', path: '/settings' }];
+
+const crumbLabels: Record<string, string> = {
+  projects: 'Projects', experiments: 'Experiments', runs: 'Runs', idea: 'Research Idea', mining: 'Mining',
+  evolution: 'Evolution', library: 'Factor Library', compare: 'Compare', correlation: 'Correlation',
+  lineage: 'Lineage', inspector: 'Factor Inspector', validation: 'Validation', stability: 'Stability',
+  regime: 'Regime', 'walk-forward': 'Walk Forward', overfit: 'Overfit', combination: 'Combination',
+  neutralization: 'Neutralization', backtest: 'Backtest', data: 'Datasets', universes: 'Universes',
+  features: 'Features', targets: 'Targets', miners: 'Miners', operators: 'Operators', fitness: 'Fitness',
+  tasks: 'Compute / Tasks', reports: 'Reports', settings: 'Settings', help: 'Help', launchpad: 'Mining',
+};
+
+const paletteItems = [
+  { group: 'Go to', label: 'Workspace Overview', path: '/', icon: LayoutGrid },
+  { group: 'Go to', label: 'Projects', path: '/projects', icon: Boxes },
+  { group: 'Go to', label: 'Experiments', path: '/experiments', icon: Workflow },
+  { group: 'Go to', label: 'Runs', path: '/runs', icon: Activity },
+  { group: 'Go to', label: 'Factor Library', path: '/library', icon: Layers3 },
+  { group: 'Go to', label: 'Validation Center', path: '/validation', icon: TestTubes },
+  { group: 'Create', label: 'New Research Idea', path: '/idea', icon: Sparkles },
+  { group: 'Create', label: 'New Experiment (Mining)', path: '/mining', icon: FlaskConical },
+  { group: 'Create', label: 'Run Backtest', path: '/backtest', icon: LineChart },
+];
 
 export function MainLayout() {
-  const location = useLocation(); const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({}); const [tasksOpen, setTasksOpen] = useState(false); const [paletteOpen, setPaletteOpen] = useState(false); const [engineOpen, setEngineOpen] = useState(false); const [preferencesOpen, setPreferencesOpen] = useState(false); const [contextOpen, setContextOpen] = useState<string | null>(null); const [query, setQuery] = useState(''); const [paletteIndex, setPaletteIndex] = useState(0); const [density, setDensity] = useState(() => localStorage.getItem('factorminer-density') || 'comfortable');
-  const toggle = (label: string) => setCollapsed(current => ({ ...current, [label]: !current[label] }));
-  const results = useMemo(() => paletteItems.filter(item => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
-  useEffect(() => { localStorage.setItem('factorminer-density', density); document.documentElement.dataset.density = density; }, [density]);
-  useEffect(() => { const onKey = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen(true); } if (event.key === 'Escape') { setPaletteOpen(false); setEngineOpen(false); setPreferencesOpen(false); setContextOpen(null); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
-  useEffect(() => { if (!paletteOpen) return; const onKey = (event: KeyboardEvent) => { if (event.key === 'ArrowDown') { event.preventDefault(); setPaletteIndex(index => Math.min(index + 1, Math.max(results.length - 1, 0))); } if (event.key === 'ArrowUp') { event.preventDefault(); setPaletteIndex(index => Math.max(index - 1, 0)); } if (event.key === 'Enter' && results[paletteIndex]) { navigate(results[paletteIndex].path); setPaletteOpen(false); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [paletteOpen, paletteIndex, results, navigate]);
-  const openPalette = () => { setQuery(''); setPaletteIndex(0); setPaletteOpen(true); };
-  const selectContext = () => { setContextOpen(null); };
-  return <div className="research-shell">
-    <header className="top-context-bar">
-      <Link to="/" className="brand-mark"><span className="brand-glyph">ƒ</span><span>FactorMiner</span></Link><div className="context-divider" />
-      <div className="research-context"><span className="context-label">RESEARCH CONTEXT</span>{[['Universe','Crypto Top50'],['频率','1H'],['预测周期','Target +4H']].map(([key,value]) => <div className="context-control" key={key}><button onClick={() => setContextOpen(contextOpen === key ? null : key)} aria-label={`选择${key}`}>{value}<ChevronDown size={11}/></button>{contextOpen === key && <div className="context-popover"><b>{key}</b>{['当前选项','自定义','应用到新研究'].map(option => <button key={option} onClick={selectContext}>{option}</button>)}<small>历史实验保留原始配置快照</small></div>}</div>)}<i /><span>Data v2026.09</span><i /><span>OOS 2026</span><i /><span>Cost 5bps</span></div>
-      <div className="top-actions"><button className="icon-button" onClick={openPalette} aria-label="打开全局搜索"><Search size={15}/><kbd>⌘ K</kbd></button><div className="engine-control"><button className="engine-status" onClick={() => setEngineOpen(!engineOpen)} aria-expanded={engineOpen}><span className="status-dot demo-dot"/> Demo engine <ChevronDown size={11}/></button>{engineOpen && <div className="engine-popover"><b>Demo engine</b><p>当前为本地演示适配器，没有真实计算引擎连接。</p><span>最近检查：刚刚</span><span>连接状态：未配置</span><div><Link to="/settings" onClick={() => setEngineOpen(false)}>查看连接设置</Link><button onClick={() => setEngineOpen(false)}>重新检查</button></div></div>}</div><button className="icon-button" onClick={() => setPreferencesOpen(true)} aria-label="打开工作台偏好" title="工作台偏好"><Settings2 size={16}/></button></div>
-    </header>
-    <div className="workstation-body"><aside className="sidebar"><div className="sidebar-head"><span>WORKSPACE</span><button className="icon-button" aria-label="折叠侧栏"><Menu size={15}/></button></div><div className="sidebar-scroll">{sections.map(section => <div className="nav-section" key={section.label}><button className="section-label" onClick={() => toggle(section.label)}>{section.label}<ChevronDown size={12} className={collapsed[section.label] ? 'rotate-[-90deg]' : ''}/></button>{!collapsed[section.label] && section.items.map(item => { const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)); const Icon = item.icon; return <Link key={`${section.label}-${item.name}`} to={item.path} className={`nav-item ${active ? 'active' : ''}`}><Icon size={15}/>{item.name}{item.name === 'Mining' && <span className="nav-badge">3</span>}</Link>; })}</div>)}</div><div className="sidebar-bottom"><Link to="/help" className="nav-item"><CircleHelp size={15}/>帮助文档</Link><div className="user-row"><span className="avatar">MR</span><span><b>Market Research</b><small>Local workspace</small></span><ChevronRight size={14}/></div></div></aside><main className={`workspace density-${density}`}><Outlet/></main><aside className="right-rail"><div className="rail-header"><span>CONTEXT</span><PanelRight size={14}/></div><div className="rail-block"><span className="rail-kicker">ACTIVE DATASET</span><b>Crypto_Perpetual_1H_v12</b><span>83 assets · 17 features</span></div><div className="rail-block"><span className="rail-kicker">CURRENT TARGET</span><b>Forward Return +4H</b><span>Cross-sectional · cost adjusted</span></div><div className="rail-block"><span className="rail-kicker">RESEARCH SESSION</span><div className="session-line"><span className="status-dot demo-dot"/>Demo session</div><span>Local preview state</span></div><Link to="/settings" className="rail-link">Open session details <ChevronRight size={13}/></Link></aside></div>
-    <button className="task-status-bar" onClick={() => setTasksOpen(true)} aria-label="打开任务中心"><span className="task-pulse"/><b>2 Demo tasks</b><span>18,420 Candidates</span><span>47 Accepted</span><span>Local queue</span><span className="task-open">Open Task Center <ChevronRight size={13}/></span></button>
-    {tasksOpen && <div className="drawer-backdrop" onClick={() => setTasksOpen(false)}><section className="task-drawer" onClick={event => event.stopPropagation()}><div className="drawer-title"><div><span className="rail-kicker">TASK CENTER</span><h2>Compute activity</h2></div><button className="icon-button" onClick={() => setTasksOpen(false)} aria-label="关闭任务中心"><X size={16}/></button></div>{[['GP Mining #184',78,'Generation 31 / 40','Best fitness .083'],['LLM Mining #185',54,'Candidate 81 / 150','Best OOS IC .054']].map(([name,progress,detail,note]) => <div className="task-card" key={name as string}><div className="task-card-head"><Link to="/experiments/exp-184" onClick={() => setTasksOpen(false)}><b>{name as string}</b></Link><span>{progress as number}%</span></div><div className="progress-track"><span style={{width:`${progress}%`}}/></div><div className="task-meta"><span>{detail as string}</span><span>{note as string}</span></div><button className="task-action" onClick={() => setTasksOpen(false)}>取消 Demo 任务</button></div>)}</section></div>}
-    {paletteOpen && <div className="drawer-backdrop" onClick={() => setPaletteOpen(false)}><section className="command-palette" onClick={event => event.stopPropagation()}><div className="command-input"><Search size={17}/><input autoFocus value={query} onChange={event => { setQuery(event.target.value); setPaletteIndex(0); }} placeholder="搜索页面、实验、因子或报告"/><kbd>ESC</kbd></div><div className="command-list"><span className="rail-kicker">{query ? 'SEARCH RESULTS' : '常用操作'}</span>{results.length ? results.map((item,index) => <button className={index === paletteIndex ? 'selected' : ''} key={item.path} onClick={() => { navigate(item.path); setPaletteOpen(false); }}><span className="command-key">{index + 1}</span>{item.label}<kbd>↵</kbd></button>) : <div className="command-empty">没有找到匹配页面或对象</div>}</div></section></div>}
-    {preferencesOpen && <div className="drawer-backdrop" onClick={() => setPreferencesOpen(false)}><section className="preference-drawer" onClick={event => event.stopPropagation()}><div className="drawer-title"><div><span className="rail-kicker">WORKSPACE PREFERENCES</span><h2>工作台偏好</h2></div><button className="icon-button" onClick={() => setPreferencesOpen(false)} aria-label="关闭工作台偏好"><X size={16}/></button></div><label className="preference-row"><span>表格密度<small>影响研究列表与结果表</small></span><select value={density} onChange={event => setDensity(event.target.value)}><option value="comfortable">舒适</option><option value="compact">紧凑</option></select></label><Link to="/settings" className="button-primary" onClick={() => setPreferencesOpen(false)}>进入完整设置</Link></section></div>}
-  </div>;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [engineOpen, setEngineOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [index, setIndex] = useState(0);
+  const [density, setDensity] = useState(() => localStorage.getItem('fm-density') || 'comfortable');
+
+  useEffect(() => { localStorage.setItem('fm-density', density); document.documentElement.dataset.density = density; }, [density]);
+
+  const results = useMemo(() => paletteItems.filter((i) => i.label.toLowerCase().includes(query.toLowerCase())), [query]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setQuery(''); setIndex(0); setPaletteOpen((v) => !v); }
+      if (e.key === 'Escape') { setPaletteOpen(false); setEngineOpen(false); setTasksOpen(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setIndex((i) => Math.min(i + 1, results.length - 1)); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setIndex((i) => Math.max(i - 1, 0)); }
+      if (e.key === 'Enter' && results[index]) { navigate(results[index].path); setPaletteOpen(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [paletteOpen, index, results, navigate]);
+
+  const segments = location.pathname.split('/').filter(Boolean);
+  const runningTasks = tasks.filter((t) => t.status === '运行中').length;
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path === '/validation') return location.pathname === '/validation';
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <Link to="/" className="brand"><span className="brand-glyph">f</span>FactorMiner</Link>
+        <div className="header-sep" />
+        <nav className="breadcrumb" aria-label="Breadcrumb">
+          {segments.length === 0 ? (
+            <span className="crumb-current">Workspace Overview</span>
+          ) : (
+            <>
+              <Link to="/">Workspace</Link>
+              {segments.map((seg, i) => {
+                const to = `/${segments.slice(0, i + 1).join('/')}`;
+                const label = crumbLabels[seg] || (seg.match(/[A-Z]{2,}-|-\d/) ? seg.toUpperCase() : seg);
+                const last = i === segments.length - 1;
+                return (
+                  <span key={to} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <ChevronRight size={13} />
+                    {last ? <span className="crumb-current">{label}</span> : <Link to={to}>{label}</Link>}
+                  </span>
+                );
+              })}
+            </>
+          )}
+        </nav>
+        <div className="header-right">
+          <button className="header-search" onClick={() => { setQuery(''); setIndex(0); setPaletteOpen(true); }}>
+            <Search size={15} /><span>Search projects, factors, runs</span><kbd>⌘K</kbd>
+          </button>
+          <div className="engine-chip">
+            <button onClick={() => setEngineOpen((v) => !v)} aria-expanded={engineOpen}><span className="dot live" /> Demo engine <ChevronDown size={13} /></button>
+            {engineOpen && (
+              <div className="popover">
+                <b>Demo engine</b>
+                <p>当前使用本地确定性演示数据适配器，未连接真实计算引擎。</p>
+                <div className="row"><span>Connection</span><span>Not configured</span></div>
+                <div className="row"><span>Last check</span><span>刚刚</span></div>
+                <div style={{ marginTop: 10 }}><Link to="/settings" onClick={() => setEngineOpen(false)}>Open engine settings</Link></div>
+              </div>
+            )}
+          </div>
+          <button className="icon-btn" title="Workspace settings" onClick={() => navigate('/settings')}><Settings2 size={17} /></button>
+        </div>
+      </header>
+
+      <div className="app-body">
+        <aside className="app-nav">
+          <div className="nav-scroll">
+            {sections.map((section) => (
+              <div className="nav-group" key={section.label}>
+                <div className="nav-group-label">{section.label}</div>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.path + item.name} to={item.path} className={`nav-item ${isActive(item.path) ? 'active' : ''}`}>
+                      <Icon size={16} />{item.name}
+                      {'count' in item && item.count ? <span className="nav-count">{item.count}</span> : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="nav-foot">
+            <Link to="/help" className="nav-item"><CircleHelp size={16} />Help & docs</Link>
+            <div className="nav-user">
+              <span className="avatar">MR</span>
+              <span><b>Market Research</b><small>Local workspace</small></span>
+              <ChevronRight size={15} />
+            </div>
+          </div>
+        </aside>
+
+        <main className="app-main"><Outlet /></main>
+      </div>
+
+      <div className="app-status">
+        <span className="st-item"><span className="st-pulse" /><b>{runningTasks}</b> running</span>
+        <span className="st-item">Engine <b>Demo</b></span>
+        <span className="st-item">Queue <b>Local</b></span>
+        <span className="st-item">Data <b className="mono">crypto-v3.2.1</b></span>
+        <button onClick={() => setTasksOpen(true)}><TerminalSquare size={13} /> Task Center <ChevronRight size={13} /></button>
+      </div>
+
+      {tasksOpen && (
+        <div className="scrim" onClick={() => setTasksOpen(false)}>
+          <section className="drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-head">
+              <div><div className="eyebrow">Task Center</div><h2>Compute activity</h2></div>
+              <button className="icon-btn" onClick={() => setTasksOpen(false)} aria-label="Close"><X size={17} /></button>
+            </div>
+            <div className="drawer-body">
+              {tasks.map((t) => (
+                <div className="task-card" key={t.id}>
+                  <div className="task-card-head"><b>{t.name}</b><span className="mono">{t.progress}%</span></div>
+                  <div className="progress thin"><span style={{ width: `${t.progress}%` }} /></div>
+                  <div className="task-meta"><span>{t.type} · {t.detail}</span><span>{t.status}</span></div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {paletteOpen && (
+        <div className="palette-wrap" onClick={() => setPaletteOpen(false)}>
+          <section className="palette" onClick={(e) => e.stopPropagation()}>
+            <div className="palette-input">
+              <Search size={18} />
+              <input autoFocus value={query} onChange={(e) => { setQuery(e.target.value); setIndex(0); }} placeholder="Jump to a page, project, or action" />
+              <kbd className="kbd">ESC</kbd>
+            </div>
+            <div className="palette-list">
+              {results.length === 0 ? (
+                <div className="palette-empty">No matches</div>
+              ) : (
+                results.map((item, i) => {
+                  const Icon = item.icon;
+                  const showGroup = i === 0 || results[i - 1].group !== item.group;
+                  return (
+                    <div key={item.path + item.label}>
+                      {showGroup && <div className="palette-group">{item.group}</div>}
+                      <button className={`palette-item ${i === index ? 'active' : ''}`} onMouseEnter={() => setIndex(i)} onClick={() => { navigate(item.path); setPaletteOpen(false); }}>
+                        <Icon size={16} />{item.label}<kbd className="kbd">↵</kbd>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
 }
+
 export default MainLayout;
