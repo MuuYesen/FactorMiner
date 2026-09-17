@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import {
-  ArrowRight, Check, Clipboard, Download, FlaskConical, GitCompareArrows, Play, Plus, RefreshCw, Search, Sparkles,
+  ArrowRight, AlertTriangle, Check, Clipboard, Download, FlaskConical, GitCompareArrows, Play, Plus, RefreshCw, Search, Sparkles, Target, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import {
   candidates, datasets, experiments, factorLineage, factors, featureGroups, icSeries, miners, operators, projects,
   reports, researchContext, researchIdeas, runs, targets, tasks, universes, validationChecks, validationResults,
 } from '../data/researchData';
-import { PageHead, Panel, PanelHead, Pill, Metrics, LineChart, BarChart, Empty } from '../components/ui';
+import { PageHead, Panel, PanelHead, Pill, Metrics, LineChart, BarChart, DivergingBars, Waterfall, Gauge, ConclusionCard, Empty } from '../components/ui';
 
 /* ============================ Research Idea ============================ */
 
@@ -401,6 +401,19 @@ export function InspectorPage() {
 
       <div style={{ marginTop: 16 }}>
         {tab === 'Overview' && (
+          <>
+          <ConclusionCard
+            title={`验证结论 · Target ${ctx}`}
+            status={validation?.decision || 'Pending'}
+            statusTone={validation?.decision === 'Accepted' ? 'success' : validation?.decision === 'Rejected' ? 'danger' : 'warn'}
+            points={[
+              { label: 'Mean IC', icon: <Target size={13} />, value: (validation?.ic ?? factor.ic).toFixed(3), tone: (validation?.ic ?? factor.ic) >= 0 ? 'pos' : 'neg' },
+              { label: '样本外 (OOS IC)', icon: <TrendingUp size={13} />, value: `${(validation?.oosIc ?? factor.oosIc).toFixed(3)} · ICIR ${(validation?.icir ?? factor.icir).toFixed(2)}` },
+              { label: '主要风险', icon: <TrendingDown size={13} />, value: '高波动区间 IC 衰减明显', tone: 'neg' },
+              { label: 'Policy', icon: <AlertTriangle size={13} />, value: validation?.policy || 'Standard Alpha Validation v3' },
+            ]}
+            highlights={validation?.decision === 'Accepted' ? ['换手率接近上限', 'OOS 窗口需持续跟踪'] : ['高波动 regime 未通过', '建议缩短持有周期', '样本外 IC 偏低']}
+          />
           <div className="split">
             <div>
               <Panel>
@@ -425,6 +438,7 @@ export function InspectorPage() {
               <div className="panel-note">同一因子在不同 Target / Policy 下可得到不同结论。</div>
             </Panel>
           </div>
+          </>
         )}
 
         {tab === 'Validation' && (
@@ -446,10 +460,16 @@ export function InspectorPage() {
 
         {tab === 'IC Analysis' && (
           <Panel>
-            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Rolling IC (train → OOS)" />
+            <PanelHead eyebrow={`Context · Target ${ctx}`} title="Rolling IC (train → OOS)" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>悬停查看每期取值</span>} />
             <div className="panel-body">
-              <LineChart series={icSeries(factor.turnover, 40)} oosFrom={28} />
-              <div className="chart-legend"><span><i />In-sample</span><span><i className="oos" />OOS window</span><span>Baseline IC = 0</span></div>
+              <LineChart
+                series={icSeries(factor.turnover, 40)}
+                benchmark={icSeries(factor.turnover + 6, 40).map((v) => v * 0.6)}
+                seriesLabel="Rolling IC" benchmarkLabel="Universe 平均"
+                labels={Array.from({ length: 40 }, (_, i) => `W${i + 1}`)}
+                oosFrom={28} height={210}
+              />
+              <div className="chart-legend"><span><i />Rolling IC</span><span><i className="bench" />Universe 平均</span><span><i className="oos" />OOS window</span><span>Baseline IC = 0</span></div>
             </div>
             <div className="panel-note">IC 对应 Dataset crypto-v3.2.1 · Universe Crypto Top50 · Target {ctx}。</div>
           </Panel>
@@ -536,14 +556,19 @@ export function Validation({ kind = 'Validation Center' }: { kind?: string }) {
       ]} />
       <div className="grid-2" style={{ marginTop: 16 }}>
         <Panel>
-          <PanelHead eyebrow="IC time series" title="Rolling IC" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>Train → OOS</span>} />
-          <div className="panel-body"><LineChart series={icSeries(18, 40)} oosFrom={28} /><div className="chart-legend"><span><i />In-sample</span><span><i className="oos" />OOS</span></div></div>
+          <PanelHead eyebrow="IC time series" title="Rolling IC" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>悬停查看每期取值</span>} />
+          <div className="panel-body"><LineChart series={icSeries(18, 40)} benchmark={icSeries(24, 40).map((v) => v * 0.6)} seriesLabel="Rolling IC" benchmarkLabel="Universe 平均" labels={Array.from({ length: 40 }, (_, i) => `W${i + 1}`)} oosFrom={28} height={210} /><div className="chart-legend"><span><i />Rolling IC</span><span><i className="bench" />Universe 平均</span><span><i className="oos" />OOS</span></div></div>
         </Panel>
         <Panel>
           <PanelHead eyebrow="Decay" title="IC by horizon" />
           <div className="panel-body"><BarChart series={[{ label: '+1H', value: 0.071 }, { label: '+4H', value: 0.061 }, { label: '+8H', value: 0.043 }, { label: '+24H', value: 0.018, muted: true }]} /><div className="chart-legend"><span>预测能力随周期衰减</span></div></div>
         </Panel>
       </div>
+      <Panel>
+        <PanelHead eyebrow="Regime" title="各市场状态 IC 贡献" aside={<span style={{ fontSize: 12, color: 'var(--text-3)' }}>相对全样本均值的偏离</span>} />
+        <div className="panel-body"><DivergingBars items={[{ label: 'Low vol', value: 0.011 }, { label: 'Mid vol', value: -0.006 }, { label: 'High vol', value: -0.040 }, { label: 'Trend', value: 0.000 }, { label: 'Range', value: -0.013 }]} valueFormat={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(3)}`} /></div>
+        <div className="panel-note">高波动区间对整体 IC 的拖累最明显，是 context 决策的关键依据。</div>
+      </Panel>
       <Panel>
         <PanelHead eyebrow="Diagnostics" title="Validation checklist" />
         <div className="panel-body"><div className="checks">{validationChecks.map((c) => <div className="check-row" key={c.key}><span className={`check-icon ${c.passed ? 'ok' : 'no'}`}>{c.passed ? <Check size={13} /> : <span style={{ fontWeight: 700 }}>!</span>}</span><b>{c.key}</b><span className="check-metric">{c.metric}</span></div>)}</div></div>
@@ -594,7 +619,25 @@ export function Backtest() {
             {running ? (
               <>
                 <Metrics items={[{ label: 'Annual return', value: '18.4%' }, { label: 'Sharpe', value: '1.32' }, { label: 'Max DD', value: '-12.8%' }]} />
-                <div style={{ marginTop: 14 }}><LineChart series={icSeries(9, 36).map((v) => v + 0.1)} /></div>
+                <div style={{ marginTop: 16 }}>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>Net value · 组合 vs 基准</div>
+                  <LineChart
+                    series={icSeries(9, 36).map((v, i) => 1 + v * 4 + i * 0.02)}
+                    benchmark={icSeries(15, 36).map((v, i) => 1 + v * 2 + i * 0.012)}
+                    seriesLabel="组合净值" benchmarkLabel="BTC Buy & Hold"
+                    labels={Array.from({ length: 36 }, (_, i) => `M${i + 1}`)}
+                    baseline={1} height={200} valueFormat={(v) => v.toFixed(3)}
+                  />
+                  <div className="chart-legend"><span><i />组合净值</span><span><i className="bench" />BTC Buy &amp; Hold</span></div>
+                </div>
+                <div style={{ marginTop: 18 }}>
+                  <div className="eyebrow" style={{ marginBottom: 10 }}>成本结构分解 (bps)</div>
+                  <Gauge segments={[{ label: '手续费', value: 5, color: 'var(--accent)' }, { label: '滑点', value: 2, color: 'var(--warn)' }, { label: '冲击成本', value: 1.4, color: 'var(--neg)' }]} />
+                </div>
+                <div style={{ marginTop: 18 }}>
+                  <div className="eyebrow" style={{ marginBottom: 10 }}>收益归因 (年化 %)</div>
+                  <Waterfall items={[{ label: '基准', value: 6.2, kind: 'base' }, { label: '选股 alpha', value: 9.4 }, { label: '择时', value: 3.1 }, { label: '成本', value: -2.8 }, { label: '组合', value: 18.4, kind: 'total' }]} />
+                </div>
               </>
             ) : <Empty title="Run to compute" text="没有可靠估算时不预填结果。" />}
           </div>

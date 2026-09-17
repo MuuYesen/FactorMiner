@@ -308,8 +308,73 @@ table.data .cell-expr { display: block; font-family: var(--mono); font-size: 11p
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .chart-legend i { width: 12px; height: 3px; border-radius: 2px; background: var(--accent); }
 .chart-legend i.oos { background: var(--warn); }
+.chart-legend i.bench { background: var(--text-4); }
 
 .spark { display: inline-block; vertical-align: middle; }
+
+/* Interactive line chart: hover cursor, dots, tooltip, x-axis */
+.chart-interactive { position: relative; }
+.chart-line-bench { stroke: var(--text-4); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart-cursor { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--accent); transform: translate(-50%, -50%); pointer-events: none; }
+.chart-dot.bench { background: var(--text-4); box-shadow: 0 0 0 1px var(--text-4); }
+.chart-tip { position: absolute; top: 6px; transform: translateX(8px); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow-pop); padding: 8px 10px; font-size: 11px; min-width: 118px; pointer-events: none; z-index: 3; }
+.chart-tip.flip { transform: translateX(calc(-100% - 8px)); }
+.chart-tip b { display: block; color: var(--text); font-size: 11px; margin-bottom: 5px; }
+.chart-tip span { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.7; }
+.chart-tip i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.chart-tip i.dot-accent { background: var(--accent); }
+.chart-tip i.dot-bench { background: var(--text-4); }
+.chart-xaxis { position: relative; height: 16px; margin-top: 2px; }
+.chart-xaxis span { position: absolute; transform: translateX(-50%); font-size: 10px; color: var(--text-4); font-family: var(--mono); white-space: nowrap; }
+
+/* Diverging horizontal bars */
+.dbars { display: flex; flex-direction: column; gap: 9px; }
+.dbar-row { display: grid; grid-template-columns: 96px 1fr 58px; align-items: center; gap: 12px; }
+.dbar-label { font-size: 12px; color: var(--text-2); text-align: right; }
+.dbar-track { position: relative; height: 18px; background: var(--surface-2); border-radius: 3px; }
+.dbar-mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-2); }
+.dbar-fill { position: absolute; top: 3px; bottom: 3px; border-radius: 2px; }
+.dbar-fill.pos { background: var(--pos); }
+.dbar-fill.neg { background: var(--neg); }
+.dbar-val { font-size: 12px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dbar-val.pos { color: var(--pos); }
+.dbar-val.neg { color: var(--neg); }
+
+/* Waterfall */
+.wf-bar.pos { fill: var(--pos); }
+.wf-bar.neg { fill: var(--neg); }
+.wf-bar.total { fill: var(--accent); }
+.wf-labels { display: flex; margin-top: 4px; }
+.wf-labels span { flex: 1; text-align: center; font-size: 10px; color: var(--text-3); }
+
+/* Gauge */
+.gauge { display: flex; align-items: center; gap: 20px; }
+.gauge svg { flex: 0 0 auto; }
+.gauge-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.gauge-legend li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.gauge-legend i { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.gauge-legend span { flex: 1; }
+.gauge-legend b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* Conclusion card */
+.conclusion { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px; }
+.conclusion-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.conclusion-head h2 { font-size: 15px; font-weight: 650; margin: 0; }
+.conclusion-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--accent); }
+.conclusion-dot.dot-success { background: var(--pos); }
+.conclusion-dot.dot-warn { background: var(--warn); }
+.conclusion-dot.dot-danger { background: var(--neg); }
+.conclusion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px 28px; }
+.conclusion-item { min-width: 0; }
+.ci-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); margin-bottom: 6px; }
+.ci-label svg { color: var(--text-4); }
+.ci-value { font-size: 13px; color: var(--text); line-height: 1.55; }
+.ci-value.pos { color: var(--pos); font-weight: 600; }
+.ci-value.neg { color: var(--neg); font-weight: 600; }
+.conclusion-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cf-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
+.chip-warn { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 5px; font-size: 12px; background: var(--warn-soft); color: var(--warn); border: 1px solid #f0e2c0; }
 
 /* ============================================================
    Expression / code viewer
