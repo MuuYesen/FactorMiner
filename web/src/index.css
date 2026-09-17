@@ -8,41 +8,43 @@
    ============================================================ */
 
 :root {
-  --bg: #f3f5f7;
+  /* Institutional analytics palette — quiet, data-rich, professional.
+     Aligned to the reference dashboard's oklch tokens (steel blue primary). */
+  --bg: oklch(0.977 0.003 245);
   --surface: #ffffff;
-  --surface-2: #f7f9fb;
-  --surface-3: #eef2f5;
-  --hover: #f0f4f7;
+  --surface-2: oklch(0.967 0.004 242);
+  --surface-3: oklch(0.953 0.006 242);
+  --hover: oklch(0.957 0.006 242);
 
-  --text: #16202b;
-  --text-2: #46586a;
-  --text-3: #6b7a88;
-  --text-4: #94a3af;
+  --text: oklch(0.188 0.014 252);
+  --text-2: oklch(0.372 0.015 250);
+  --text-3: oklch(0.515 0.012 248);
+  --text-4: oklch(0.632 0.011 250);
 
-  --line: #e2e7ec;
-  --line-2: #d3dbe2;
-  --line-strong: #c2cdd6;
+  --line: oklch(0.908 0.006 243);
+  --line-2: oklch(0.878 0.006 243);
+  --line-strong: oklch(0.832 0.008 243);
 
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: #eaf1fe;
-  --accent-line: #c5d9fc;
-  --accent-text: #1d4ed8;
+  --accent: oklch(0.468 0.128 244);
+  --accent-hover: oklch(0.418 0.122 244);
+  --accent-soft: oklch(0.955 0.022 244);
+  --accent-line: oklch(0.862 0.05 244);
+  --accent-text: oklch(0.442 0.128 244);
 
-  --pos: #17935f;
-  --pos-soft: #e6f5ee;
-  --neg: #d0453b;
-  --neg-soft: #fceceb;
-  --warn: #a9720b;
-  --warn-soft: #fbf1dc;
-  --info: #2563eb;
-  --info-soft: #eaf1fe;
+  --pos: oklch(0.508 0.118 158);
+  --pos-soft: oklch(0.955 0.03 158);
+  --neg: oklch(0.528 0.19 22);
+  --neg-soft: oklch(0.955 0.035 22);
+  --warn: oklch(0.52 0.11 66);
+  --warn-soft: oklch(0.955 0.04 78);
+  --info: oklch(0.468 0.128 244);
+  --info-soft: oklch(0.955 0.022 244);
 
   --r: 6px;
   --r-sm: 4px;
   --r-lg: 8px;
-  --shadow: 0 1px 2px rgba(16, 32, 45, 0.04), 0 1px 3px rgba(16, 32, 45, 0.05);
-  --shadow-pop: 0 8px 28px rgba(16, 32, 45, 0.14);
+  --shadow: 0 1px 2px rgba(20, 30, 45, 0.03);
+  --shadow-pop: 0 8px 28px rgba(20, 30, 45, 0.12);
 
   --nav-w: 244px;
   --header-h: 52px;
@@ -374,7 +376,7 @@ table.data .cell-expr { display: block; font-family: var(--mono); font-size: 11p
 .ci-value.neg { color: var(--neg); font-weight: 600; }
 .conclusion-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .cf-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
-.chip-warn { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 5px; font-size: 12px; background: var(--warn-soft); color: var(--warn); border: 1px solid #f0e2c0; }
+.chip-warn { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 5px; font-size: 12px; background: var(--warn-soft); color: var(--warn); border: 1px solid oklch(0.88 0.05 80); }
 
 /* ============================================================
    Expression / code viewer
